@@ -1,0 +1,30 @@
+public class MyRunnable implements Runnable{
+    @Override
+    public void run() {
+        for (int i=0;i<5;i++){
+            System.out.println(Thread.currentThread().getName()+ " run " +i +" times ");
+        }
+    }
+}
+class RunnableDemo{
+    public static void main(String[] args) {
+        MyRunnable myRunnable0 = new MyRunnable();
+        MyRunnable myRunnable1 = new MyRunnable();
+        MyRunnable myRunnable2 = new MyRunnable();
+        MyRunnable myRunnable3 = new MyRunnable();
+        MyRunnable myRunnable4 = new MyRunnable();
+//        ExecutorService threadPool = Executors.newSingleThreadExecutor(); //单线程
+//        ExecutorService threadPool = Executors.newFixedThreadPool(2); //指定线程数
+        ExecutorService threadPool = Executors.newCachedThreadPool(); //可变容量
+        threadPool.execute(myRunnable0);
+        threadPool.execute(myRunnable1);
+        threadPool.execute(myRunnable2);
+        threadPool.execute(myRunnable3);
+        threadPool.execute(myRunnable4);
+
+        threadPool.shutdown();//关闭线程池
+
+//        new Thread(myRunnable0).start();
+//        new Thread(myRunnable1).start();
+    }
+}
