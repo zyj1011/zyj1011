@@ -1,0 +1,19 @@
+public class MyThread extends Thread{
+    @Override
+    public void run(){
+        for (int i=0; i<1000; i++){
+            System.out.println(Thread.currentThread().getName()+ " run " +i +" times ");
+        }
+    }
+}
+class ThreadDemo{
+    public static void main(String[] args) {
+        MyThread myThread0 = new MyThread();
+        MyThread myThread1 = new MyThread();
+        MyThread myThread2 = new MyThread();
+
+        myThread0.start();
+        myThread1.start();
+        myThread2.start();
+    }
+}
