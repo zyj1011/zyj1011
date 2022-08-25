@@ -1,0 +1,39 @@
+package com.entity.physical;
+
+import com.alibaba.fastjson.annotation.JSONType;
+
+import lombok.Data;
+
+/**
+ * @since 2022-08-01
+ */
+@Data
+@JSONType(orders = {"tenantId","appName","versionNo","createOperator","createTime","lastModOperator","lastModTime","validStartTime","validEndTime","catalogId","tableId","tableCode","tableName","tableNameEn","tableStatus","tableDesc","tableDescEn","isOpen","isOperate","metadataSrcType","billType","openFlag","isHasSourceModel","isHasImpactModel","streamId","versionFlag"})
+public class PhyTableInfo {
+    private String tenantId;  // 租户ID，客户无需填写
+    private String appName;  // 工程名称，客户无需填写
+    private String versionNo;  // 版本编号，作用存疑，可为null。
+    private String createOperator;  // 创建人，客户无需填写
+    private String createTime;  // 创建时间，客户无需填写
+    private String lastModOperator;  // 最后修改人，客户无需填写
+    private String lastModTime;  // 最后修改时间，客户无需填写
+    private String validStartTime;  // 表生效时间，默认与表创建时间一致，是否提供选择填写存疑
+    private String validEndTime;  // 表失效时间，默认到2099-12-31，是否提供选择填写存疑
+    private String catalogId;  // modellayer1 物理模型 modellayer0 逻辑模型，客户提供。
+    private String tableId;  // 客户无需填写，固定格式：前缀+ tableCode  （clickhouse--919984092, kafka--24126672）
+    private String tableCode;  // 必须字段，此字段为表名称字段
+    private String tableName;  // 必须字段，此字段为 表中文别名
+    private String tableNameEn;  // 必须字段，此字段为 表英文别名
+    private String tableStatus;  // （默认draft），表状态：draft（草稿态）、release（发布态）、废弃态（discard）、delete（删除态） 选择填写
+    private String tableDesc;  // 中文描述, 选择填写
+    private String tableDescEn;  // 英文描述, 选择填写
+    private Boolean isOpen;  // 默认为true 是否开放 选择填写
+    private Boolean isOperate;  // 是否为基础包，作用存疑，可为null。
+    private String metadataSrcType;  // 0117元数据来源方式，枚举值 WEB_CREATE：web页面正向建模生成 RESTFUL_CREATE：restful接口导入 WEB_IMPORT_INTERNAL：前台导入-模型复制  选择填写。
+    private String billType;  // 作用存疑，可为null。
+    private Integer openFlag;  // 作用存疑，可为null。
+    private Boolean isHasSourceModel;  // 作用存疑，可为null
+    private Boolean isHasImpactModel;  // 作用存疑，可为null
+    private String streamId;  // 作用存疑，可为null
+    private Integer versionFlag;  // 作用存疑，可为null
+}
