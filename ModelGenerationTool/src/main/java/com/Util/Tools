@@ -1,0 +1,61 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2022-2022. All rights reserved.
+ */
+
+package com.huawei.weautomate.cube.Util;
+
+import com.huawei.weautomate.cube.listener.DataListener;
+
+import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.ExcelReader;
+import com.alibaba.excel.read.metadata.ReadSheet;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
+/**
+ * 功能描述
+ *
+ * @since 2022-08-01
+ */
+public class Tools {
+    static Map<Integer, String> sheetMap;
+    static {
+        sheetMap = new HashMap();
+        sheetMap.put(0, Constant.SHEET_NAME_TABLE);
+        sheetMap.put(1, Constant.SHEET_NAME_POINT);
+        sheetMap.put(2, Constant.SHEET_NAME_KAFKA);
+        sheetMap.put(3, Constant.SHEET_NAME_CLICKHOUSE);
+        sheetMap.put(4, Constant.SHEET_NAME_CARBON);
+    }
+
+    /**
+     * 解析excel
+     */
+    public static void parseExcel(String projectName, String fileName){
+        ExcelReader excelReader = EasyExcel.read(new File(fileName)).ignoreEmptyRow(true).build();
+        // 先获取所有sheet
+        List<ReadSheet> readSheets = excelReader.excelExecutor().sheetList();
+        // 去除掉不解析的sheet
+        AtomicInteger sheetTotal = new AtomicInteger(readSheets.size()) ;
+        DataListener columnDataListener =new DataListener(sheetTotal, projectName) ;
+
+        ReadSheet[] toReadList = new ReadSheet[readSheets.size()] ;
+
+        // 遍历读取每个sheet
+        for (int i = 0; i < readSheets.size(); i++) {
+            ReadSheet readSheet = readSheets.get(i);
+            toReadList[i] = EasyExcel.readSheet(readSheet.getSheetNo())
+                .headRowNumber(1)
+                .autoTrim(true)
+                .registerReadListener(columnDataListener)
+                .build();
+        }
+
+        excelReader.read(toReadList);
+        excelReader.finish();
+    }
+}
