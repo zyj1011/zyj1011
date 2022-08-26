@@ -1,0 +1,55 @@
+package com.huawei.weautomate.cube.Util;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+
+/**
+ * @author wx1133650
+ * date 2022/8/25 9:02
+ */
+public class JTextFieldUtil implements FocusListener {
+    private JTextField jTextField;
+    private String PLACE_INPUT_AST;
+
+    public JTextFieldUtil(String PLACE_INPUT_AST, JTextField jTextField){
+        this.PLACE_INPUT_AST = PLACE_INPUT_AST;
+        this.jTextField = jTextField;
+    }
+    public JTextFieldUtil(JTextField jTextField){
+        this.jTextField = jTextField;
+    }
+    public JTextFieldUtil(){}
+
+    /**
+     * 校验内容是否为空,如果为空,则设置placeholder属性
+     *
+     */
+    public  void checkText() {
+        // 判断输入框里是否有内容,没有就进行默认设置
+        if (jTextField.getText() == null||"".equals(jTextField.getText())) {
+            // 提示内容
+            jTextField.setText(PLACE_INPUT_AST);
+            jTextField.setFont(new Font("仿宋",Font.ITALIC,14));
+        }
+    }
+
+    @Override
+    public void focusGained(FocusEvent e) {
+        String text = jTextField.getText();
+        jTextField.setFont(new Font("", Font.ROMAN_BASELINE,15));
+        if (text.equals(PLACE_INPUT_AST)){
+            jTextField.setText("");
+        }
+    }
+
+    @Override
+    public void focusLost(FocusEvent e) {
+        String text = jTextField.getText();
+        if (text == null||"".equals(text)) { // 移出时没有发现内容,则设置为提示内容
+            jTextField.setFont(new Font("仿宋",Font.ITALIC,14));
+            jTextField.setText(PLACE_INPUT_AST);
+        }
+    }
+}
