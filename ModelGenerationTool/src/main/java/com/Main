@@ -1,0 +1,109 @@
+package com.huawei.weautomate.cube;
+
+/**
+ * @author wx1133650
+ * date 2022/8/23 16:49
+ */
+
+import com.huawei.weautomate.cube.Util.FileTools;
+import com.huawei.weautomate.cube.Util.JTextFieldUtil;
+import com.huawei.weautomate.cube.Util.JFrameLogUtil;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+/**
+ * @since 2022-08-01
+ */
+public class Main {
+    public static JFrame mainFrame;
+    public static JTextPane jTextPane;
+
+    public static void main(String[] args) {
+        JButton create = new JButton("创建");
+        JButton clearLog = new JButton("清空日志");
+
+        mainFrame = new JFrame("We+ cube 1.0.0"); //容器
+        mainFrame.setBounds(600, 300, 650, 400);
+        mainFrame.setResizable(true);
+        mainFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        mainFrame.setLocationRelativeTo(null);
+
+        ImageIcon icon = new ImageIcon(Main.class.getResource("/image/image1.png"));
+        mainFrame.setIconImage(icon.getImage());
+
+        JPanel panel = new JPanel();
+
+        final JTextField textField = new JTextField();
+        JTextFieldUtil jTextFieldUtil =new JTextFieldUtil("请输入工程名", textField);
+        jTextFieldUtil.checkText();
+        textField.setOpaque(true); // 设置透明
+        textField.setToolTipText("请输入工程名");
+        textField.addFocusListener(jTextFieldUtil);
+        textField.setPreferredSize(new Dimension (120,30));
+
+        final JTextField textField1 = new JTextField("", 20);
+        JTextFieldUtil jTextFieldUtil1 =new JTextFieldUtil("请选择文件", textField1);
+        jTextFieldUtil1.checkText();
+        textField1.setOpaque(true); // 设置透明
+        textField1.setToolTipText("请选择文件");
+        textField1.setPreferredSize(new Dimension (200,30));
+
+        JButton openBtn = new JButton("选择文件");
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException
+                | UnsupportedLookAndFeelException e) {
+            e.printStackTrace();
+        }
+        final JTextArea msgTextArea = new JTextArea(30, 60);
+        msgTextArea.setLineWrap(true);
+
+        openBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                FileTools.showFileOpenDialog(mainFrame, msgTextArea);
+                textField1.setText(msgTextArea.getText());
+            }
+        });
+        clearLog.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                jTextPane.setText("");
+            }
+        });
+
+        JScrollPane scrollPane = new JScrollPane();
+        mainFrame.getContentPane().add(scrollPane, BorderLayout.CENTER);
+
+        jTextPane = new JTextPane();
+        new JFrameLogUtil(jTextPane);
+        scrollPane.setViewportView(jTextPane);
+
+
+        panel.add(textField);
+        panel.add(textField1);
+        panel.add(openBtn);
+        panel.add(create);
+        panel.add(clearLog);
+
+        create.addActionListener(new ActionListener() { //给按钮绑定监听时间（触发事件）
+            @Override
+            public void actionPerformed(ActionEvent e) {
+//                int result = JOptionPane.showConfirmDialog(null, "确定生成zip包吗？", "", 0); //""是弹框的标题
+//                if (result == 1) { // yes :0 , no :1 ,cancel :2
+//                    return;
+//                }else if (result == 0){
+                Tasks.doTasks(textField.getText(),msgTextArea.getText(), mainFrame);
+//                }
+            }
+        });
+
+        // 把垂直箱容器作为内容面板设置到窗口
+        mainFrame.getContentPane().add(panel, BorderLayout.NORTH);
+        mainFrame.setLocationRelativeTo(null);
+        mainFrame.setVisible(true);
+    }
+}
