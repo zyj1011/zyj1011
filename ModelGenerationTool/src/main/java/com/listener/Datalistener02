@@ -1,0 +1,767 @@
+
+
+    /**
+     * 数据源公共字段部分
+     */
+    private PhyStoreInfo commonStoreInfo(ModelInfo modelInfo) {
+        PhyStoreInfo phyStoreInfo = new PhyStoreInfo();
+        phyStoreInfo.setTenantId("1002");
+        phyStoreInfo.setVersionNo("1.0");
+        phyStoreInfo.setDataSourceId(modelInfo.getDataSourceId());
+        phyStoreInfo.setDataSourceSchema(modelInfo.getDataSourceSchema());
+        phyStoreInfo.setSaveType(modelInfo.getSaveType());
+        phyStoreInfo.setStoreTypeId(modelInfo.getStoreTypeId());
+        phyStoreInfo.setTableSuffix(null);
+        phyStoreInfo.setTableRule(modelInfo.getTableRule());
+        phyStoreInfo.setIsCreateTable(modelInfo.getIsCreateTable());
+        phyStoreInfo.setIsUseCustomParam(false); // 暂为false
+        phyStoreInfo.setIsSelfPartition(modelInfo.getIsSelfPartition());
+        phyStoreInfo.setSelfPartition(modelInfo.getIsSelfPartition());
+        phyStoreInfo.setTimeIntervalFormat(modelInfo.getTimeIntervalFormat());
+        phyStoreInfo.setTimeInterval(modelInfo.getTimeInterval());
+        phyStoreInfo.setDataCycleFormat(modelInfo.getDataCycleFormat());
+        phyStoreInfo.setDataCycle(modelInfo.getDataCycle());
+        phyStoreInfo.setStartDataCycle(modelInfo.getStartDataCycle());
+        // hdfs存储结束周期==0时，需要给值为null
+        if (modelInfo.getEndDataCycle() != null){
+            phyStoreInfo.setEndDataCycle(modelInfo.getEndDataCycle() == 0 ? null : modelInfo.getEndDataCycle());
+        }
+        phyStoreInfo.setIsAgeing(modelInfo.getIsAgeing());
+        phyStoreInfo.setAgeingPolicy(modelInfo.getAgeingPolicy());
+        phyStoreInfo.setIsHistoryCycle(false);
+        phyStoreInfo.setFileFormat(modelInfo.getFileFormat());
+        phyStoreInfo.setFileType(modelInfo.getFileType());
+        phyStoreInfo.setFileName(modelInfo.getFileName());
+        phyStoreInfo.setFilePath(modelInfo.getFilePath());
+        phyStoreInfo.setFileHeaderCount(modelInfo.getFileHeaderCount());
+        phyStoreInfo.setFileTailCount(modelInfo.getFileTailCount());
+        phyStoreInfo.setColumnDelimiter(modelInfo.getColumnDelimiter());
+        phyStoreInfo.setLineDelimiter(modelInfo.getLineDelimiter());
+        phyStoreInfo.setKvDelimiter(null);
+        phyStoreInfo.setQuotes(modelInfo.getQuotes());
+        phyStoreInfo.setCompressionFormat(modelInfo.getCompressionFormat());
+        phyStoreInfo.setEncodingType(modelInfo.getEncodingType());
+        phyStoreInfo.setQueryQueue(modelInfo.getQueryQueue());
+        phyStoreInfo.setStoreQueue(modelInfo.getStoreQueue());
+        phyStoreInfo.setIsInfrequentAccessTime(false);
+        phyStoreInfo.setIsArchiveTime(false);
+        phyStoreInfo.setIsExpirationTime(false);
+        return phyStoreInfo;
+    }
+
+    /**
+     * 数据源公共字段部分
+     */
+    private PhyColumnInfo commonColumnInfo(ColumnInfo column, String time) {
+        PhyColumnInfo phyColumnInfo = new PhyColumnInfo();
+        phyColumnInfo.setTenantId("1002");
+        phyColumnInfo.setVersionNo("1.0");
+        phyColumnInfo.setColumnType(column.getColumnType());
+        phyColumnInfo.setColumnCode(column.getColumnCode());
+        phyColumnInfo.setParentColumnCode(null);
+        phyColumnInfo.setColumnName(column.getColumnName());
+        phyColumnInfo.setColumnNameEn(column.getColumnNameEn());
+        phyColumnInfo.setDataType(column.getDataType());
+        phyColumnInfo.setDataLength(column.getDataLength());
+        phyColumnInfo.setDataPrecision(column.getDataPrecision());
+        phyColumnInfo.setColumnFormat(column.getColumnFormat());
+        phyColumnInfo.setColumnDesc(column.getColumnDesc());
+        phyColumnInfo.setColumnDescEn(column.getColumnDescEn());
+        phyColumnInfo.setOrderId(column.getNumber());
+        phyColumnInfo.setIndexType(column.getIndexType());
+        phyColumnInfo.setPartitionSeq(column.getPartitionSeq());
+        phyColumnInfo.setFileWidth(column.getFileWidth());
+        phyColumnInfo.setIsAgeing(false);
+        phyColumnInfo.setIsSplitTable(column.getIsSplitTable());
+        phyColumnInfo.setIsSplitPartition(column.getIsSplitPartition());
+        phyColumnInfo.setIsDictionaryCol(column.getIsDictionaryCol());
+        phyColumnInfo.setIsNotInvertedCol(column.getIsNotInvertedCol());
+        phyColumnInfo.setIsBucket(false);
+        phyColumnInfo.setSortKeySeq(column.getSortKeySeq());
+        phyColumnInfo.setPartitionType(null);
+        phyColumnInfo.setFamilyTypeId("0");
+        phyColumnInfo.setHbaseColFamily(null);
+        phyColumnInfo.setHbaseZipType(null);
+        phyColumnInfo.setFileNodePath(null);
+        phyColumnInfo.setCreateTime(null);
+        phyColumnInfo.setLastModTime(time);
+        phyColumnInfo.setIsOpen(true);
+        phyColumnInfo.setOpenFlag(1);
+        phyColumnInfo.setSensitiveType(column.getSensitiveAttribute());
+        return phyColumnInfo;
+    }
+
+    /**
+     * 模型基本信息
+     *
+     * @param content
+     */
+    private void getModelInfos(Map<Integer, String> content) throws NumberFormatException{
+        ModelInfo kafkaModelInfo = new ModelInfo();
+        ModelInfo clickHouseModelInfo = new ModelInfo();
+        ModelInfo carbonModelInfo = new ModelInfo();
+        ModelInfo hdfsModelInfo = new ModelInfo();
+        ModelInfo gaussModelInfo = new ModelInfo();
+
+        if (StringUtils.isNotBlank(content.get(3))) {
+            LogicalEntity logicalEntity = new LogicalEntity();
+            logicalEntity.setEntityId(content.get(3));
+            logicalEntity.setEntityCode(content.get(3));
+            logicalEntity.setEntityName(content.get(4));
+            logicalEntity.setEntityNameEn(content.get(5));
+            logicalEntity.setEntityDesc(content.get(6));
+            logicalEntity.setEntityDescEn(content.get(7));
+            logicalEntity.setEntityKeyWords(content.get(8));
+            switch (content.get(9)) {
+                case "普通表":
+                    logicalEntity.setEntityType("entityType_normal");
+                    break;
+                case "事实表":
+                    logicalEntity.setEntityType("entityType_fact");
+                    break;
+                case "维度表":
+                    logicalEntity.setEntityType("entityType_dim");
+                    break;
+                case "维度拉链表":
+                    logicalEntity.setEntityType("entityType_zipperDim");
+                    break;
+            }
+            switch (content.get(10)) {
+                case "通用业务":
+                    logicalEntity.setBuziTypeId("buziType_global");
+                    break;
+                case "xdr":
+                    logicalEntity.setBuziTypeId("buziType_xdr");
+                    break;
+                case "sdr":
+                    logicalEntity.setBuziTypeId("buziType_sdr");
+                    break;
+                case "bkpi":
+                    logicalEntity.setBuziTypeId("buziType_bkpi");
+                    break;
+                case "dim":
+                    logicalEntity.setBuziTypeId("buziType_dim");
+                    break;
+                case "cfg":
+                    logicalEntity.setBuziTypeId("buziType_cfg");
+                    break;
+            }
+            logicalEntity.setVersionFlag("不共享".equals(content.get(11)) ? 0 : 2);
+            logicalEntities.add(logicalEntity);
+        }
+
+        // kafka模型赋值，模型code不为空在添加
+        if (StringUtils.isNotBlank(content.get(12))){
+            kafkaModelInfo.setIsCreateTable("Y".equalsIgnoreCase(content.get(1)));
+            kafkaModelInfo.setTopic(content.get(2));
+            kafkaModelInfo.setLogicalModel(content.get(3));
+            kafkaModelInfo.setPhysicalModel(content.get(12));
+            kafkaModelInfo.setTableStatus("Y".equalsIgnoreCase(content.get(13)) ? "release" : "draft");
+            kafkaModelInfo.setDataSourceId(content.get(14));
+            kafkaModelInfo.setTimeIntervalFormat(getTimeIntervalFormat(content.get(15)));
+            kafkaModelInfo.setTimeInterval(StringUtils.isBlank(content.get(16)) ? 0 : Integer.valueOf(content.get(16)));
+            kafkaModelInfo.setFileType(content.get(17));
+            kafkaModelInfo.setEncodingType(content.get(18));
+            kafkaModelInfo.setCompressionFormat(getCompressionFormat(content.get(19)));
+            kafkaModelInfo.setVersionFlag("APP间共享".equalsIgnoreCase(content.get(20)) ? 2 : 0);
+            kafkaModelInfo.setTableDesc(content.get(21));
+            kafkaModelInfo.setTableDescEn(content.get(22));
+            kafkaModelInfo.setTableName(content.get(23));
+            kafkaModelInfo.setTableNameEn(content.get(24));
+            kafkaModelInfo.setAgeingPolicy(getageingPolicy(content.get(25)));
+            kafkaModelInfo.setDataCycle(StringUtils.isBlank(content.get(26)) ? 0 :Integer.valueOf(content.get(26)));
+            kafkaModelInfo.setDataCycleFormat(getDataCycleFormat(content.get(27)));
+            kafkaModelInfo.setEventPartitions(StringUtils.isBlank(content.get(28)) ? 0 :Integer.valueOf(content.get(28)));
+            kafkaModelInfo.setEventReplications(StringUtils.isBlank(content.get(29)) ? 0 :Integer.valueOf(content.get(29)));
+            kafkaModelInfo.setColumnDelimiter(content.get(30));
+            kafkaModelInfo.setLineDelimiter(content.get(31));
+            kafkaInfos.add(kafkaModelInfo);
+        }
+
+        // clickHouse模型赋值，模型code不为空在添加
+        if (StringUtils.isNotBlank(content.get(32))) {
+            clickHouseModelInfo.setLogicalModel(content.get(3));
+            clickHouseModelInfo.setPhysicalModel(content.get(32));
+            // PartitionTablePartCol_SaveType 分表分区 、PartitionTable_SaveType 分表不分区、PartitionCol_SaveType 合表分区、None_SaveType
+            // 合表不分区
+            clickHouseModelInfo.setSaveType(getSaveType(content.get(33), content.get(41)));
+            clickHouseModelInfo.setTableRule(("PartitionTablePartCol_SaveType".equals(clickHouseModelInfo.getSaveType()) || "PartitionTable_SaveType".equals(clickHouseModelInfo.getSaveType())) ? clickHouseModelInfo.getPhysicalModel() + "_${UTC}" : clickHouseModelInfo.getPhysicalModel());
+            clickHouseModelInfo.setIsCreateTable("Y".equalsIgnoreCase(content.get(34)) ? true : false);
+            clickHouseModelInfo.setExtendValue(content.get(35));
+            clickHouseModelInfo.setIsAgeing("Y".equalsIgnoreCase(content.get(36)) ? true : false);
+            clickHouseModelInfo.setDataCycle(StringUtils.isBlank(content.get(37)) ? 0 : Integer.valueOf(content.get(37)));
+            clickHouseModelInfo.setDataCycleFormat(getDataCycleFormat(content.get(38)));
+            clickHouseModelInfo.setDataSourceId(content.get(39));
+            clickHouseModelInfo.setDataSourceSchema(content.get(40));
+            clickHouseModelInfo.setIsSelfPartition("Y".equalsIgnoreCase(content.get(41)) ? true : false);
+            clickHouseModelInfo.setTimeIntervalFormat(getTimeIntervalFormat(content.get(42)));
+            clickHouseModelInfo.setTimeInterval(StringUtils.isBlank(content.get(43)) ? 0 : Integer.valueOf(content.get(43)));
+            clickHouseModelInfo.setTableStatus("Y".equalsIgnoreCase(content.get(44)) ? "release" : "draft");
+            clickHouseModelInfo.setTableDesc(content.get(45));
+            clickHouseModelInfo.setTableDescEn(content.get(46));
+            clickHouseModelInfo.setTableName(content.get(47));
+            clickHouseModelInfo.setTableNameEn(content.get(48));
+            clickHouseModelInfo.setVersionFlag("APP间共享".equalsIgnoreCase(content.get(49)) ? 2 : 0);
+            clickHouseInfos.add(clickHouseModelInfo);
+        }
+        // carbon模型赋值，模型code不为空在添加
+        if (StringUtils.isNotBlank(content.get(50))) {
+            carbonModelInfo.setLogicalModel(content.get(3));
+            carbonModelInfo.setPhysicalModel(content.get(50));
+            carbonModelInfo.setSaveType(getSaveType(content.get(51), content.get(52)));
+            // PartitionTablePartCol_SaveType 分表分区 、PartitionTable_SaveType 分表不分区
+            carbonModelInfo.setTableRule(("PartitionTablePartCol_SaveType".equals(carbonModelInfo.getSaveType()) || "PartitionTable_SaveType".equals(carbonModelInfo.getSaveType())) ? carbonModelInfo.getPhysicalModel() + "_${UTC}" : carbonModelInfo.getPhysicalModel());
+            carbonModelInfo.setIsSelfPartition(("Y".equalsIgnoreCase(content.get(52))) ? true : false);
+            carbonModelInfo.setVersionFlag("APP间共享".equalsIgnoreCase(content.get(53)) ? 2 : 0);
+            carbonModelInfo.setDataSourceId(content.get(54));
+            carbonModelInfo.setDataSourceSchema(content.get(55));
+            carbonModelInfo.setDataCycleFormat(getDataCycleFormat(content.get(56)));
+            carbonModelInfo.setIsCreateTable("Y".equalsIgnoreCase(content.get(57)) ? true : false);
+            carbonModelInfo.setTimeIntervalFormat(getTimeIntervalFormat(content.get(58)));
+            carbonModelInfo.setTimeInterval(StringUtils.isBlank(content.get(59)) ? 0 : Integer.valueOf(content.get(59)));
+            carbonModelInfo.setTableDesc(content.get(60));
+            carbonModelInfo.setTableDescEn(content.get(61));
+            carbonModelInfo.setTableName(content.get(62));
+            carbonModelInfo.setTableNameEn(content.get(63));
+            carbonModelInfo.setQueryQueue(content.get(64));
+            carbonModelInfo.setStoreQueue(content.get(65));
+            carbonModelInfo.setIsAgeing("Y".equalsIgnoreCase(content.get(66)) ? true : false);
+            carbonModelInfo.setDataCycle(StringUtils.isBlank(content.get(67)) ? 0 : Integer.valueOf(content.get(67)));
+            carbonModelInfo.setTableStatus("Y".equalsIgnoreCase(content.get(68)) ? "release" : "draft");
+            carbonInfos.add(carbonModelInfo);
+        }
+        // HDFS模型赋值，模型code不为空在添加
+        if (StringUtils.isNotBlank(content.get(69))) {
+            hdfsModelInfo.setLogicalModel(content.get(3));
+            hdfsModelInfo.setPhysicalModel(content.get(69));
+            hdfsModelInfo.setVersionFlag("APP间共享".equalsIgnoreCase(content.get(70)) ? 2 : 0);
+            hdfsModelInfo.setTableDesc(content.get(71));
+            hdfsModelInfo.setTableDescEn(content.get(72));
+            hdfsModelInfo.setTableName(content.get(73));
+            hdfsModelInfo.setTableNameEn(content.get(74));
+            hdfsModelInfo.setDataSourceId(content.get(75));
+            hdfsModelInfo.setDataCycleFormat(getDataCycleFormat(content.get(76)));
+            hdfsModelInfo.setDataCycle(StringUtils.isBlank(content.get(77)) ? 0 : Integer.valueOf(content.get(77)));
+            hdfsModelInfo.setIsAgeing("Y".equalsIgnoreCase(content.get(78)) ? true : false);
+            hdfsModelInfo.setSaveType("Y".equalsIgnoreCase(content.get(78)) ? "PartitionTable_SaveType" : "None_SaveType");
+            // 老化周期单位月和日的时候才展示存储表，月和日的时候展示_${UTC},其他展示_YYYYMMDDHH这种的
+            hdfsModelInfo.setTableRule("无".equals(content.get(76)) ? hdfsModelInfo.getPhysicalModel() : hdfsModelInfo.getPhysicalModel() + getTableRuleHdfs(content.get(76)));
+            hdfsModelInfo.setStartDataCycle(StringUtils.isBlank(content.get(79)) ? 0 : Integer.valueOf(content.get(79)));
+            hdfsModelInfo.setEndDataCycle(hdfsModelInfo.getDataCycle() + hdfsModelInfo.getStartDataCycle());
+            hdfsModelInfo.setTimeIntervalFormat(getTimeIntervalFormat(content.get(80)));
+            hdfsModelInfo.setTimeInterval(StringUtils.isBlank(content.get(81)) ? 0 : Integer.valueOf(content.get(81)));
+            hdfsModelInfo.setFileType(content.get(82));
+            hdfsModelInfo.setFileName(content.get(83));
+            hdfsModelInfo.setFilePath(content.get(84));
+            hdfsModelInfo.setEncodingType(content.get(85));
+            hdfsModelInfo.setCompressionFormat(getHdfsCompressionFormat(content.get(86)));
+            hdfsModelInfo.setFileFormat(getFileFormat(content.get(87)));
+            hdfsModelInfo.setColumnDelimiter(content.get(88));
+            hdfsModelInfo.setQuotes(getQuotes(content.get(89)));
+            hdfsModelInfo.setFileHeaderCount(StringUtils.isBlank(content.get(90)) ? 0 : Integer.valueOf(content.get(90)));
+            hdfsModelInfo.setFileTailCount(StringUtils.isBlank(content.get(91)) ? 0 : Integer.valueOf(content.get(91)));
+            hdfsModelInfo.setTableStatus("Y".equalsIgnoreCase(content.get(92)) ? "release" : "draft");
+            hdfsInfos.add(hdfsModelInfo);
+        }
+        // gauss模型赋值，模型code不为空在添加
+        if (StringUtils.isNotBlank(content.get(93))) {
+            gaussModelInfo.setLogicalModel(content.get(3));
+            gaussModelInfo.setPhysicalModel(content.get(93));
+            gaussModelInfo.setTableDesc(content.get(94));
+            gaussModelInfo.setTableDescEn(content.get(95));
+            gaussModelInfo.setTableName(content.get(96));
+            gaussModelInfo.setTableNameEn(content.get(97));
+            gaussModelInfo.setVersionFlag("APP间共享".equalsIgnoreCase(content.get(98)) ? 2 : 0);
+            gaussModelInfo.setDataSourceId(content.get(99));
+            gaussModelInfo.setDataSourceSchema(content.get(100));
+            gaussModelInfo.setSaveType("分表".equals(content.get(101)) ? "PartitionTable_SaveType" : "None_SaveType");
+            gaussModelInfo.setDataCycleFormat(getDataCycleFormat(content.get(94)));
+            // 分表时需要考虑后缀，合表时直接是表名
+            gaussModelInfo.setTableRule("分表".equals(content.get(101)) ? content.get(93) + getTableRule(content.get(103), content.get(102)) : content.get(93));
+            gaussModelInfo.setIsCreateTable("Y".equalsIgnoreCase(content.get(104)) ? true : false);
+            gaussModelInfo.setIsAgeing("Y".equalsIgnoreCase(content.get(105)) ? true : false);
+            gaussModelInfo.setDataCycle(StringUtils.isBlank(content.get(106)) ? 0 : Integer.valueOf(content.get(106)));
+            gaussModelInfo.setTimeIntervalFormat(getTimeIntervalFormat(content.get(107)));
+            gaussModelInfo.setTimeInterval(StringUtils.isBlank(content.get(108)) ? 0 : Integer.valueOf(content.get(108)));
+            gaussModelInfo.setTableStatus("Y".equalsIgnoreCase(content.get(109)) ? "release" : "draft");
+            gaussInfos.add(gaussModelInfo);
+        }
+
+        // 判断主表名称
+        String isDefault = content.get(110);
+        if (StringUtils.isNotBlank(isDefault)) {
+            if (isDefault.equals(content.get(12))) {
+                kafkaModelInfo.setIsDefault(true);
+            } else if (isDefault.equals(content.get(32))) {
+                clickHouseModelInfo.setIsDefault(true);
+            } else if (isDefault.equals(content.get(50))) {
+                carbonModelInfo.setIsDefault(true);
+            } else if (isDefault.equals(content.get(69))) {
+                hdfsModelInfo.setIsDefault(true);
+            } else if (isDefault.equals(content.get(93))) {
+                gaussModelInfo.setIsDefault(true);
+            }
+        }
+    }
+
+    // 转化存储规则
+    private String getSaveType(String saveType, String isSelfPartition) {
+        if (StringUtils.equals("是", isSelfPartition))
+            isSelfPartition = "Y";
+        String result = null;
+        if (StringUtils.equals("合表", saveType)) {
+            if (StringUtils.equalsIgnoreCase("Y", isSelfPartition)) {
+                result = "PartitionCol_SaveType";
+            } else {
+                result = "None_SaveType";
+            }
+        } else {
+            if (StringUtils.equalsIgnoreCase("Y", isSelfPartition)) {
+                result = "PartitionTablePartCol_SaveType";
+            } else {
+                result = "PartitionTable_SaveType";
+            }
+        }
+        return result;
+    }
+
+    // 转化数据粒度单位
+    private String getTimeIntervalFormat(String text) {
+        String timeIntervalFormat = null;
+        if (StringUtils.equals("月", text)) {
+            timeIntervalFormat = "Month_Interval";
+        } else if (StringUtils.equals("周", text)) {
+            timeIntervalFormat = "Week_Interval";
+        } else if (StringUtils.equals("日", text)) {
+            timeIntervalFormat = "Day_Interval";
+        } else if (StringUtils.equals("小时", text)) {
+            timeIntervalFormat = "Hour_Interval";
+        } else if (StringUtils.equals("分钟", text)) {
+            timeIntervalFormat = "Minute_Interval";
+        } else {
+            timeIntervalFormat = "None_Interval";
+        }
+        return timeIntervalFormat;
+    }
+
+    // 转化老化周期单位
+    private String getDataCycleFormat(String text) {
+        String dataCycleFormat = null;
+        if (StringUtils.equals("年", text)) {
+            dataCycleFormat = "Year_DataCycle";
+        } else if (StringUtils.equals("月", text) || StringUtils.equalsIgnoreCase("m", text)) {
+            dataCycleFormat = "Month_DataCycle";
+        } else if (StringUtils.equals("日", text) || StringUtils.equalsIgnoreCase("d", text)) {
+            dataCycleFormat = "Day_DataCycle";
+        } else if (StringUtils.equals("小时", text)) {
+            dataCycleFormat = "Hour_DataCycle";
+        }  else {
+            dataCycleFormat = "None_DataCycle";
+        }
+        return dataCycleFormat;
+    }
+
+    // 压缩方式转化
+    private String getCompressionFormat(String text) {
+        String compressionFormat = null;
+        if (StringUtils.equalsIgnoreCase("Snappy", text)) {
+            compressionFormat = "Snappy_KafkaZipType";
+        } else if (StringUtils.equalsIgnoreCase("gz", text)) {
+            compressionFormat = "GZ_KafkaZipType";
+        } else if (StringUtils.equalsIgnoreCase("lz4", text)) {
+            compressionFormat = "LZ4_KafkaZipType";
+        } else if (StringUtils.equalsIgnoreCase("zstd", text)) {
+            compressionFormat = "Zstd_KafkaZipType";
+        } else {
+            compressionFormat = "None_KafkaZipType";
+        }
+        return compressionFormat;
+    }
+
+    // hdfs压缩方式转化
+    private String getHdfsCompressionFormat(String text) {
+        String compressionFormat = null;
+        if (StringUtils.equalsIgnoreCase("Snappy", text)) {
+            compressionFormat = "Snappy";
+        } else if (StringUtils.equalsIgnoreCase("gz", text)) {
+            compressionFormat = "GZ";
+        } else {
+            compressionFormat = "None";
+        }
+        return compressionFormat;
+    }
+
+    // hdfs文件格式
+    private String getFileFormat(String text) {
+        String fileFormat = null;
+        if (StringUtils.equals("列分隔符文件", text)) {
+            fileFormat = "ColDelimited";
+        } else if (StringUtils.equals("字符定长格式文件", text)) {
+            fileFormat = "CharFixLen";
+        } else if (StringUtils.equals("字节定长格式文件", text)) {
+            fileFormat = "ByteFixLen";
+        } else {
+            fileFormat = "None";
+        }
+        return fileFormat;
+    }
+
+    // hdfs解析方式转化
+    private String getQuotes(String text) {
+        String quotes = null;
+        if (StringUtils.equals("单引号", text)) {
+            quotes = "SingleQuote_ParseMode";
+        } else if (StringUtils.equals("双引号", text)) {
+            quotes = "DoubleQuote_ParseMode";
+        } else {
+            quotes = "None_ParseMode";
+        }
+        return quotes;
+    }
+
+    // 转换表名称
+    private String getTableRule(String text, String dataCycleFormat){
+        String suffix = null;
+        if ("COMMON".equalsIgnoreCase(text)){
+            if ("月".equals(dataCycleFormat)){
+                suffix = "_YYYYMM";
+            } else if ("日".equals(dataCycleFormat)){
+                suffix = "_YYYYMMDD";
+            } else {
+                suffix = "";
+            }
+        }else {
+            suffix = "_${UTC}";
+        }
+        return suffix;
+    }
+
+    // hdfs转换表名称
+    private String getTableRuleHdfs(String dataCycleFormat){
+        String suffix = null;
+        if ("月".equals(dataCycleFormat)){
+            suffix = "_${UTC}";
+        } else if ("日".equals(dataCycleFormat)){
+            suffix = "_${UTC}";
+        } else if ("年".equals(dataCycleFormat)){
+            suffix = "_YYYY";
+        } else if ("小时".equals(dataCycleFormat)){
+            suffix = "_YYYYMMDDHH";
+        } else {
+            suffix = "";
+        }
+        return suffix;
+    }
+
+    // 老化策略
+    private String getageingPolicy(String text) {
+        String ageingPolicy = null;
+        if (StringUtils.equals("删除", text)) {
+            ageingPolicy = "delete";
+        } else if (StringUtils.equals("压缩", text)) {
+            ageingPolicy = "compact";
+        } else {
+            ageingPolicy = "None";
+        }
+        return ageingPolicy;
+    }
+
+    // 列类型转换
+    private Integer getColumnType(String text){
+        Integer type = null;
+        if (StringUtils.equalsIgnoreCase("STARTTIME", text)){
+            type = 3;
+        }else if (StringUtils.equalsIgnoreCase("ENDTIME", text)){
+            type = 8;
+        }else if(StringUtils.equalsIgnoreCase("TIMECOLUMN", text)){
+            type = 11;
+        }else {
+            type = 0;
+        }
+        return type;
+    }
+
+    /**
+     * 列基本信息
+     *
+     * @param content
+     * @param type
+     */
+    private void getColumnInfos(Map<Integer, String> content, String type) {
+        // 编号为空直接返回
+        if (StringUtils.isBlank(content.get(1))) return;
+
+        ColumnInfo columnInfo = new ColumnInfo();
+        columnInfo.setModelCode(content.get(0));
+        columnInfo.setNumber(StringUtils.isBlank(content.get(1)) ? 0 :Integer.valueOf(content.get(1)));
+        columnInfo.setColumnCode(content.get(2));
+        columnInfo.setColumnName(content.get(3));
+        columnInfo.setColumnNameEn(content.get(4));
+        columnInfo.setColumnType(getColumnType(content.get(5)));
+        columnInfo.setDataType(content.get(6));
+        // 数据类型为NUMERIC/DECIMAL,长度和精度会有值
+        if (StringUtils.equals("NUMERIC", columnInfo.getDataType()) || StringUtils.equals("DECIMAL", columnInfo.getDataType()) || StringUtils.equals("VARCHAR", columnInfo.getDataType())){
+            columnInfo.setDataLength(content.get(7));
+            columnInfo.setDataPrecision(content.get(8));
+        }
+        // 数据类型为DATE/DATETIME，格式才会有值
+        if (StringUtils.equals("DATE", columnInfo.getDataType()) || StringUtils.equals("DATETIME", columnInfo.getDataType())){
+            columnInfo.setColumnFormat(content.get(9));
+        }
+        // 数据类型为STRING/-/CLOB/VARCHAR,敏感属性才会有值
+        if (StringUtils.equals("STRING", columnInfo.getDataType()) || StringUtils.equals("-", columnInfo.getDataType()) || StringUtils.equals("CLOB", columnInfo.getDataType()) || StringUtils.equals("VARCHAR", columnInfo.getDataType())){
+            columnInfo.setSensitiveAttribute(content.get(10));
+        }
+        columnInfo.setColumnDesc(content.get(11));
+        columnInfo.setColumnDescEn(content.get(12));
+        if (StringUtils.equals(Constant.DATA_SOURCE_TYPE_KAFKA, type)) {
+            columnInfo.setHighLevel(content.get(13));
+            columnInfo.setIsSplitPartition("Y".equalsIgnoreCase(content.get(14)));
+            kafkaColumns.add(columnInfo);
+        } else if (StringUtils.equals(Constant.DATA_SOURCE_TYPE_CLICK, type)) {
+            columnInfo.setIndexType(content.get(13));
+            columnInfo.setHighLevel(content.get(14));
+            columnInfo.setSortKeySeq(StringUtils.isBlank(content.get(15)) ? null :Integer.valueOf(content.get(15)));
+            columnInfo.setIsSplitPartition("Y".equalsIgnoreCase(content.get(16)));
+            columnInfo.setIsSplitTable("Y".equalsIgnoreCase(content.get(17)));
+            clickHouseColumns.add(columnInfo);
+        } else if (StringUtils.equals(Constant.DATA_SOURCE_TYPE_CARBON, type)) {
+            columnInfo.setHighLevel(content.get(13));
+            columnInfo.setIsSplitPartition("Y".equalsIgnoreCase(content.get(14)));
+            columnInfo.setIsDictionaryCol("Y".equalsIgnoreCase(content.get(15)));
+            columnInfo.setIsNotInvertedCol("Y".equalsIgnoreCase(content.get(16)));
+            columnInfo.setPartitionSeq(content.get(17));
+            columnInfo.setIsSplitTable("Y".equalsIgnoreCase(content.get(18)));
+            carbonColumns.add(columnInfo);
+        } else if (StringUtils.equals(Constant.DATA_SOURCE_TYPE_HDFS, type)){
+            columnInfo.setHighLevel(content.get(13));
+            columnInfo.setFileWidth(content.get(14));
+            columnInfo.setIsSplitTable("Y".equalsIgnoreCase(content.get(15)));
+            hdfsColumns.add(columnInfo);
+        } else if (StringUtils.equals(Constant.DATA_SOURCE_TYPE_GAUSS, type)){
+            columnInfo.setIndexType(content.get(13));
+            columnInfo.setIndexType(content.get(14));
+            columnInfo.setIsSplitTable("Y".equalsIgnoreCase(content.get(15)));
+            gaussColumns.add(columnInfo);
+        }
+    }
+
+    /**
+     * 列基本信息
+     *
+     * @param content
+     */
+    private void getLogicalInfos(Map<Integer, String> content) {
+        LogicalAttribute logicalAttribute = new LogicalAttribute();
+        logicalAttribute.setEntityId(content.get(0));
+        logicalAttribute.setAttributeId(content.get(0).concat("-").concat(content.get(2)));
+        logicalAttribute.setVersionNo("1.0");
+        logicalAttribute.setEntityCode(content.get(0));
+        logicalAttribute.setAttributeCode(content.get(2));
+        logicalAttribute.setAttributeName(content.get(3));
+        logicalAttribute.setAttributeNameEn(content.get(4));
+        if (StringUtils.isNotBlank(content.get(5))) {
+            switch (content.get(5)) {
+                case "TIMECOLUMN":
+                    logicalAttribute.setAttributeTypeId("attributeType_timecolumn");
+                    break;
+                case "STARTTIME":
+                    logicalAttribute.setAttributeTypeId("attributeType_starttime_utc");
+                    break;
+                case "ENDTIME":
+                    logicalAttribute.setAttributeTypeId("attributeType_endTime");
+                    break;
+                default:
+                    logicalAttribute.setAttributeTypeId(null);
+                    break;
+            }
+        }
+        logicalAttribute.setDataType(content.get(6));
+        logicalAttribute.setOrderId(StringUtils.isBlank(content.get(1)) ? 0 : Integer.parseInt(content.get(1)));
+        logicalAttribute.setDataLength(StringUtils.isBlank(content.get(7)) ? null : Integer.parseInt(content.get(7)));
+        logicalAttribute.setDataPrecision(StringUtils.isBlank(content.get(8)) ? null : Integer.parseInt(content.get(8)));
+        logicalAttribute.setReferenceTime(content.get(9));
+        logicalAttribute.setShiftTime(content.get(10));
+        logicalAttribute.setSensitiveType(content.get(11));
+        logicalAttribute.setAttributeDesc(content.get(12));
+        logicalAttribute.setAttributeDescEn(content.get(13));
+        logicalAttribute.setIsNotNull("Y".equalsIgnoreCase(content.get(14)));
+        logicalAttribute.setIsPk("Y".equalsIgnoreCase(content.get(15)));
+        logicalAttribute.setAttributeKeyWords(content.get(16));
+        LogicalAttributeInfo logicalAttributeInfo = new LogicalAttributeInfo();
+        logicalAttributeInfo.setLogicalAttribute(logicalAttribute);
+        logicalAttributeInfo.setLogicalAttributeExes(null);
+        logicalColumns.add(logicalAttributeInfo);
+    }
+
+    /**
+     * 基于dataSourceType和dataSourceId和tableCode生成tableId值
+     *
+     * @param dataSourceType   数据源类型
+     * @param dataSourceId     数据源Id
+     * @param dataSourceSchema 数据源dataSourceSchema
+     * @return tableId值 model id by data source id
+     */
+    public static Long getModuleIdByDataSource(String dataSourceType, String dataSourceId, String dataSourceSchema) {
+        Long moduleId;
+        if (StringUtils.isNumeric(dataSourceId)) {
+            moduleId = Long.valueOf(dataSourceId);
+        } else {
+            moduleId = Long.valueOf(StringUtils.join(dataSourceType, dataSourceId, dataSourceSchema).hashCode());
+        }
+        return moduleId;
+    }
+
+    private void writeToJson(Long moduleID, String moduleCode, PhysicalModel physicalModel) {
+        String content = JSONObject.toJSONString(physicalModel, SerializerFeature.WriteMapNullValue);
+        String filaName = moduleID + "-" + moduleCode + ".json";
+        String path = System.getProperty("user.dir").concat("\\physical\\") + filaName;
+        generateJsonFile(content, path);
+        JframeLogUtil.log("模型:["+physicalModel.getPhyTableInfo().getTableCode()+"] 解析成功", "INFO");
+    }
+
+    private void generateJsonFile(String content, String path) {
+        File file = new File(path);
+        // 父级目录不存在，则创建
+        if (!file.getParentFile().exists()) {
+            file.getParentFile().mkdirs();
+        }
+        // 文件存在先删除
+        if (file.exists()) {
+            file.delete();
+        }
+        try {
+            file.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try (FileOutputStream fileOutputStream = new FileOutputStream(file);
+             Writer Writer = new OutputStreamWriter(fileOutputStream, "utf-8");) {
+            Writer.write(content);
+            Writer.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 表清单信息校验
+     *
+     * @param sheetName sheet页名称
+     * @param row 行index
+     * @param head 表头
+     * @param value 行数据值
+     */
+    private void validateCheck(String sheetName, int row, Map<Integer, String> head, Map<Integer, String> value) {
+        // 校验列的数据类型时，由于值不一样所以需要根据类型赋值
+        if (StringUtils.equals(Constant.SHEET_NAME_KAFKA, sheetName)) {
+            RegexRelation.regexMap.put("*数据类型",
+                    new String[] {"^(STRING|LONG|DOUBLE|DATE|INT)$", "只能为STRING/LONG/DOUBLE/DATE/INT！"});
+        } else if (StringUtils.equals(Constant.SHEET_NAME_CLICKHOUSE, sheetName)) {
+            RegexRelation.regexMap.put("*数据类型", new String[] {"^(STRING|INT64|FLOAT64)$", "只能为STRING/INT64/FLOAT64！"});
+        } else if (StringUtils.equals(Constant.SHEET_NAME_CARBON, sheetName)) {
+            RegexRelation.regexMap.put("*数据类型", new String[] {"^(STRING|BIGINT|DECIMAL|DOUBLE|DATE|INT)$",
+                    "只能为STRING/BIGINT/DECIMAL/DOUBLE/DATE/INT！"});
+        } else if (StringUtils.equals(Constant.SHEET_NAME_HDFS, sheetName)) {
+            RegexRelation.regexMap.put("*数据类型",
+                    new String[] {"^(-|CLOB|STRING|BOOL|DOUBLE|SHORT|INTEGER|FLOAT|LONG|DATETIME)$",
+                            "只能为-/CLOB/STRING/BOOL/DOUBLE/SHORT/INTEGER/FLOAT/LONG/DATETIME！"});
+        } else if (StringUtils.equals(Constant.SHEET_NAME_GAUSS, sheetName) || StringUtils.equals(Constant.SHEET_NAME_POINT, sheetName)) {
+            RegexRelation.regexMap.put("*数据类型",
+                    new String[] {"^(VARCHAR|NUMERIC|INTEGER)$", "只能为VARCHAR|NUMERIC|INTEGER！"});
+        }
+
+        for (Integer key : value.keySet()) {
+            String result = null;
+            String headName = head.get(key);
+            // 根据表头去获取正则表达式
+            String[] regexInfo = RegexRelation.regexMap.get(headName);
+            if (regexInfo != null && StringUtils.isNotBlank(regexInfo[0])) {
+                Pattern compile = Pattern.compile(regexInfo[0]);
+                // 值为null的时候给赋值空字符串
+                String cell = value.get(key);
+                if (StringUtils.isBlank(cell)) {
+                    cell = "";
+                }
+                Matcher matcher = compile.matcher(cell);
+                if (!matcher.matches()) {
+                    JframeLogUtil.log("[sheetName:"+sheetName+">>>rowIndex:"+row+">>>column:"+headName.replace("*", "")+"]:"+regexInfo[1], "ERROR");
+                    result = regexInfo[1];
+                } else {
+                    // 校验精度、长度
+                    if ("长度".equals(headName)) {
+                        // 数据类型
+                        String dataType = value.get(key - 1);
+                        // 数据类型为NUMERIC/DECIMAL，最大长度不能超过38
+                        if (StringUtils.equals(dataType, "NUMERIC") || StringUtils.equals(dataType, "DECIMAL")) {
+                            if (StringUtils.isNotBlank(cell)) {
+                                if (Integer.valueOf(cell) > 38) {
+                                    result = "请输入正整数，且不超过38！";
+                                }
+                            } else {
+                                result = "请输入正整数，且不超过38！";
+                            }
+                        }
+                        // 数据类型为varchar时，最大长度不能超过65535
+                        if (StringUtils.equals(dataType, "VARCHAR")){
+                            if (StringUtils.isNotBlank(cell)) {
+                                if (Integer.valueOf(cell) > 65535) {
+                                    result = "请输入正整数，且不超过65535！";
+                                }
+                            } else {
+                                result = "请输入正整数，且不超过65535！";
+                            }
+                        }
+                    } else if ("精度".equals(headName)) {
+                        // 数据类型
+                        String dataType = value.get(key - 2);
+                        if (StringUtils.equals(dataType, "NUMERIC") || StringUtils.equals(dataType, "DECIMAL")) {
+                            if (StringUtils.isNotBlank(cell)) {
+                                // 数据长度
+                                String dataLength = value.get(key - 1);
+                                Integer length = Integer.valueOf(StringUtils.isBlank(dataLength) ? "0" : dataLength);
+                                // 数据类型为NUMERIC/DECIMAL，精度不能超过38
+                                if (Integer.valueOf(cell) > length) {
+                                    result = "精度不能大于长度！";
+                                }
+                                if (Integer.valueOf(cell) > 38) {
+                                    result = "支撑最大精度为38！";
+                                }
+                            } else {
+                                result = "请输入整数值！";
+                            }
+                        }
+                    }
+                }
+            }
+            if (StringUtils.isNotBlank(result)){
+                printResult(sheetName, row, headName, result);
+            }
+        }
+        // 校验列重复
+        if (!(StringUtils.equals(Constant.SHEET_NAME_TABLE, sheetName))){
+            // key为模型名+列名
+            String repeatKey = value.get(0) + "_" + value.get(2);
+            if (StringUtils.isNotEmpty(columnRepeateCheck.get(repeatKey))){
+                printResult(sheetName, row, "列名称", "列名称重复！");
+            } else {
+                columnRepeateCheck.put(repeatKey, value.get(2));
+            }
+        }
+    }
+
+    private void printResult (String sheetName, int row, String headName, String result){
+        checkResult.append("[sheetName:")
+                .append(sheetName)
+                .append(">>>")
+                .append("rowIndex:")
+                .append(row)
+                .append(">>>")
+                .append("column:")
+                .append(headName.replace("*", ""))
+                .append("]:")
+                .append(result)
+                .append("\n");
+    }
+}
