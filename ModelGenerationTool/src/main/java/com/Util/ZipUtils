@@ -1,0 +1,108 @@
+package com.huawei.weautomate.cube.Util;
+
+import javax.swing.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+/**
+ * 压缩工具类
+ */
+public class ZipUtils {
+    private static final AtomicInteger count = new AtomicInteger();
+
+    private static final byte[] bytes = new byte[1024];
+
+    private static final SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
+
+    public static void toZip(String projectName) {
+        long startTime = System.currentTimeMillis();
+        try (ZipOutputStream zipOutputStream = new ZipOutputStream(
+                Files.newOutputStream(Paths.get(projectName + "_METAONE_DATA_" + df.format(new Date()) + ".zip")))) {
+            File sourceFile = new File(System.getProperty("user.dir"));
+
+            // 递归压缩文件夹
+            compress(sourceFile, zipOutputStream, sourceFile.getName());
+
+            zipOutputStream.flush();
+            zipOutputStream.close();
+
+            // 文件压缩完成删除文件夹
+            File logicalTempFile = new File(System.getProperty("user.dir").concat("\\logical\\"));
+            File physicalTempFile = new File(System.getProperty("user.dir").concat("\\physical\\"));
+
+            if (logicalTempFile.exists()) {
+                logicalTempFile.delete();
+            }
+
+            if (physicalTempFile.exists()) {
+                physicalTempFile.delete();
+            }
+            if (count.get() > 0) {
+                JFrameLogUtil.log("文件压缩完成,文件共" + count + "个", "INFO");
+                long endTime = System.currentTimeMillis();
+                JFrameLogUtil.log("文件压缩用时" + (endTime - startTime) + "ms", "INFO");
+                JOptionPane.showMessageDialog(null,"创建成功","提示",JOptionPane.INFORMATION_MESSAGE);
+                JFrameLogUtil.log("创建工程模型成功！" , "INFO");
+                count.set(0);
+            }
+        } catch (IOException e) {
+            JFrameLogUtil.log(">>>>>> zip压缩文件生成失败 <<<<<<", "ERROR");
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 递归压缩文件/文件夹
+     *
+     * @param sourceFile 被压缩的文件/文件夹路径
+     * @param zos        ZipOutputStream
+     * @param name       被压缩的文件/文件夹名称
+     */
+    private static void compress(File sourceFile, ZipOutputStream zos, String name) {
+        // 遍历获取工作目录下文件
+        for (File file : Objects.requireNonNull(sourceFile.listFiles())) {
+            try {
+                BasicFileAttributes basicFileAttributes = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
+                // 当路径为文件夹，压缩空文件夹
+                if (basicFileAttributes.isDirectory() &&
+                        ("logical".equals(file.getName()) || "physical".equals(file.getName()))) {
+                    zos.putNextEntry(new ZipEntry(file.getName().concat("/")));
+                    zos.closeEntry();
+                    compressFile(file, zos, file.getName());
+                }
+            } catch (IOException e) {
+                JFrameLogUtil.log(">>>>>> 压缩文件错误 <<<<<<", "ERROR");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static void compressFile(File sourceFile, ZipOutputStream zos, String name) throws IOException {
+        for (File file : Objects.requireNonNull(sourceFile.listFiles())) {
+            // 当路径为文件，压缩空文件
+            zos.putNextEntry(new ZipEntry(name.concat("/").concat(file.getName())));
+            JFrameLogUtil.log("压缩文件：" + sourceFile.getAbsolutePath().concat("/").concat(file.getName()), "INFO");
+            // copy文件到zip流里
+            int len;
+            FileInputStream in = new FileInputStream(file);
+
+            while ((len = in.read(bytes)) != -1) {
+                zos.write(bytes, 0, len);
+            }
+            zos.closeEntry();
+            in.close();
+            count.incrementAndGet();
+            file.delete();
+        }
+    }
+}
