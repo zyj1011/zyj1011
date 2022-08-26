@@ -1,0 +1,165 @@
+
+package com;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * 正则表达式的关联关系
+ *
+ * @since 2022-08-19
+ */
+public class RegexRelation {
+    public static Map<String ,String[]> regexMap = new HashMap<>();
+
+    static {
+        // kafka
+        regexMap.put("*序号", new String[]{"^[0-9]*$", "只能为数字！"});
+        regexMap.put("*是否建Topic", new String[]{"^(Y|N)$", "只能为Y/N！"});
+        regexMap.put("*topic", new String[]{"^[\\s\\S]{1,249}$", "不能为空，且长度不能超过249！"});
+        regexMap.put("*逻辑模型", new String[]{"^[a-zA-Z_][a-zA-Z0-9_]{1,60}$", "以英文字母或者下划线开头, 其余为英文字母、数字、下划线，且长度不能超过60！"});
+        regexMap.put("*Kafka模型", new String[]{"^[a-zA-Z_][a-zA-Z0-9_]{1,60}$", "以英文字母或者下划线开头, 其余为英文字母、数字、下划线，且长度不能超过60！"});
+        regexMap.put("*Kafka是否发布", new String[]{"^(Y|N)$", "只能为Y/N！"});
+        regexMap.put("*Kafka数据源id", new String[]{"^[\\s\\S]{1,64}$", "不能为空，且长度不能超过64！"});
+        regexMap.put("*Kafka数据粒度单位", new String[]{"^(无|月|周|日|小时|分钟)$", "只能为无/月/周/日/小时/分钟！"});
+        regexMap.put("*Kafka数据粒度", new String[]{"^(|0|1|5|15)$", "只能为空/0/1/5/15！"});
+        regexMap.put("*Kafka文本类型", new String[]{"^(txt|xml|csv|自定义)$", "只能为txt/xml/csv/自定义！"});
+        regexMap.put("*Kafka文件编码", new String[]{"^(UTF-8|ASCII|ISO-8859-1|GBK)$", "只能为UTF-8/ASCII/ISO-8859-1/GBK！"});
+        regexMap.put("*Kafka压缩方式", new String[]{"^(未压缩|gz|Snappy|lz4|zstd)$", "只能为未压缩/gz/Snappy/lz4/zstd！"});
+        regexMap.put("*Kafka表作用范围", new String[]{"^(不共享|App间共享|APP间共享)$", "只能为不共享/App(APP)间共享！"});
+        regexMap.put("*Kafka表中文别名", new String[]{"^[\\s\\S]{1,256}$", "不能为空，且长度不能超过256！"});
+        regexMap.put("*Kafka表中英文别名", new String[]{"^[\\s\\S]{1,256}$", "不能为空，且长度不能超过256！"});
+        regexMap.put("*Kafka老化策略", new String[]{"^(无|压缩|删除)$", "只能为无/压缩/删除！"});
+        regexMap.put("*kafka老化周期", new String[]{"^([0-9]\\d{0,3}|)$", "只能输入0~9999之间的整数/空！"});
+        regexMap.put("*Kafka老化周期单位", new String[]{"^(|无|年|月|m|日|d|小时)$", "只能为空/无/年/月(m)/日(d)/小时！"});
+        regexMap.put("*Kafka分区数", new String[]{"^[1-9]\\d*$", "只能为正整数！"});
+        regexMap.put("*Kafka副本数", new String[]{"^[1-9]\\d*$", "只能为正整数！"});
+        regexMap.put("Kafka字段分隔符", new String[]{"^(,|;|自定义参数|\\|)$", "只能为,/;/自定义参数/\\|！"});
+        regexMap.put("*Kafka行分隔符", new String[]{"^[\\s\\S]*.*[^\\s][\\s\\S]*$", "不能为空！"});
+        regexMap.put("Kafka中文描述", new String[]{"^[\\s\\S]{0,1000}$", "长度不能超过1000！"});
+        regexMap.put("Kafka表英文描述", new String[]{"^[\\s\\S]{0,1000}$", "长度不能超过1000！"});
+
+
+        // clickHouse
+        regexMap.put("*Clickhouse模型", new String[]{"^[a-zA-Z_][a-zA-Z0-9_]{1,60}$", "以英文字母或者下划线开头, 其余为英文字母、数字、下划线，且长度不能超过60！"});
+        regexMap.put("*Clickhouse存储规则", new String[]{"^(分表|合表)$", "只能为分表/合表！"});
+        regexMap.put("*Clickhouse表引擎(分表必填)", new String[]{"^(|MergeTree|ReplacingMergeTree)$", "只能为空/MergeTree/ReplacingMergeTree！"});
+        regexMap.put("*Clickhouse是否老化", new String[]{"^(Y|N)$", "只能为Y/N！"});
+        regexMap.put("*Clickhouse老化周期", new String[]{"^([0-9]\\d{0,3}|)$", "只能输入0~9999之间的整数/空！"});
+        regexMap.put("*Clickhouse老化周期单位", new String[]{"^(|月|m|日|d)$", "只能为空/月(m)/日(d)！"});
+        regexMap.put("*Clickhouse数据源ID", new String[]{"^[\\s\\S]{1,64}$", "不能为空，且长度不能超过64！"});
+        regexMap.put("*Clickhouse数据库schema", new String[]{"^[a-zA-Z0-9._]{1,64}$", "只允许输入字母、数字、下划线、点，且长度不能超过64！"});
+        regexMap.put("*Clickhouse是否分区", new String[]{"^(Y|N)$", "只能为Y/N！"});
+        regexMap.put("*Clickhouse数据粒度单位", new String[]{"^(无|月|周|日|小时|分钟)$", "只能为无/月/周/日/小时/分钟！"});
+        regexMap.put("*Clickhouse数据粒度", new String[]{"^(|0|1|5|15)$", "只能为空/0/1/5/15！"});
+        regexMap.put("*Clickhouse是否发布", new String[]{"^(Y|N)$", "只能为Y/N！"});
+        regexMap.put("*Clickhouse表中文别名", new String[]{"^[\\s\\S]{1,256}$", "不能为空，且长度不能超过256！"});
+        regexMap.put("*Clickhouse表英文别名", new String[]{"^[\\s\\S]{1,256}$", "不能为空，且长度不能超过256！"});
+        regexMap.put("*Clickhouse表作用范围", new String[]{"^(不共享|App间共享|APP间共享)$", "只能为不共享/App(APP)间共享！"});
+        regexMap.put("Clickhouse表中文描述", new String[]{"^[\\s\\S]{0,1000}$", "长度不能超过1000！"});
+        regexMap.put("Clickhouse表英文描述", new String[]{"^[\\s\\S]{0,1000}$", "长度不能超过1000！"});
+
+        // carbon
+        regexMap.put("*Carbon模型", new String[]{"^[a-zA-Z_][a-zA-Z0-9_]{1,60}$", "以英文字母或者下划线开头, 其余为英文字母、数字、下划线，且长度不能超过60！"});
+        regexMap.put("*Carbon存储规则", new String[]{"^(分表|合表)$", "只能为分表/合表！"});
+        regexMap.put("*Carbon是否分区", new String[]{"^(Y|N)$", "只能为Y/N！"});
+        regexMap.put("*Carbon表作用范围", new String[]{"^(不共享|App间共享|APP间共享)$", "只能为不共享/App(APP)间共享！"});
+        regexMap.put("*Carbon数据源ID", new String[]{"^[\\s\\S]{1,64}$", "不能为空，且长度不能超过64！"});
+        regexMap.put("*Carbon数据库schema", new String[]{"^[a-zA-Z0-9._]{1,64}$", "只允许输入字母、数字、下划线、点，且长度不能超过64！"});
+        regexMap.put("*Carbon分表粒度单位", new String[]{"^(|月|m|日|d)$", "只能为空/月(m)/日(d)！"});
+        regexMap.put("*Carbon是否创建表", new String[]{"^(Y|N)$", "只能为Y/N！"});
+        regexMap.put("*Carbon数据粒度单位", new String[]{"^(无|月|周|日|小时|分钟)$", "只能为无/月/周/日/小时/分钟！"});
+        regexMap.put("*Carbon数据粒度", new String[]{"^(|0|1|5|15)$", "只能为空/0/1/5/15！"});
+        regexMap.put("*Carbon表中文别名", new String[]{"^[\\s\\S]{1,256}$", "不能为空，且长度不能超过256！"});
+        regexMap.put("*Carbon表英文别名", new String[]{"^[\\s\\S]{1,256}$", "不能为空，且长度不能超过256！"});
+        regexMap.put("*Carbon查询队列", new String[]{"^[\\s\\S]{1,64}$", "不能为空，且长度不能超过64！"});
+        regexMap.put("*Carbon存储队列", new String[]{"^[\\s\\S]{1,64}$", "不能为空，且长度不能超过64！"});
+        regexMap.put("*Carbon是否老化", new String[]{"^(Y|N)$", "只能为Y/N！"});
+        regexMap.put("*Carbon老化周期", new String[]{"^([0-9]\\d{0,3}|)$", "只能输入0~9999之间的整数/空！"});
+        regexMap.put("*Carbon是否发布", new String[]{"^(Y|N)$", "只能为Y/N！"});
+        regexMap.put("Carbon表中文描述", new String[]{"^[\\s\\S]{0,1000}$", "长度不能超过1000！"});
+        regexMap.put("Carbon表英文描述", new String[]{"^[\\s\\S]{0,1000}$", "长度不能超过1000！"});
+
+        // hdfs
+        regexMap.put("*HDFS模型", new String[]{"^[a-zA-Z_][a-zA-Z0-9_]{1,60}$", "以英文字母或者下划线开头, 其余为英文字母、数字、下划线，且长度不能超过60！"});
+        regexMap.put("*HDFS表作用范围", new String[]{"^(不共享|App间共享|APP间共享)$", "只能为不共享/App(APP)间共享！"});
+        regexMap.put("*HDFS表中文别名", new String[]{"^[\\s\\S]{1,256}$", "不能为空，且长度不能超过256！"});
+        regexMap.put("*HDFS表英文别名", new String[]{"^[\\s\\S]{1,256}$", "不能为空，且长度不能超过256！"});
+        regexMap.put("*HDFS数据源id", new String[]{"^[\\s\\S]{1,64}$", "不能为空，且长度不能超过64！"});
+        regexMap.put("*HDFS老化周期单位", new String[]{"^(|无|年|月|m|日|d|小时)$", "只能为空/无/年/月(m)/日(d)/小时！"});
+        regexMap.put("*HDFS老化周期", new String[]{"^([0-9]\\d{0,3}|)$", "只能输入0~9999之间的整数/空！"});
+        regexMap.put("*HDFS是否老化", new String[]{"^(Y|N)$", "只能为Y/N！"});
+        regexMap.put("*HDFS存储起始周期", new String[]{"^([0-9]\\d{0,3}|)$", "只能输入0~9999之间的整数/空！"});
+        regexMap.put("*HDFS数据粒度单位", new String[]{"^(无|月|周|日|小时|分钟)$", "只能为无/月/周/日/小时/分钟！"});
+        regexMap.put("*HDFS数据粒度", new String[]{"^(|0|1|5|15)$", "只能为空/0/1/5/15！"});
+        regexMap.put("*HDFS文本类型", new String[]{"^(txt|xml|csv|自定义)$", "只能为txt/xml/csv/自定义！"});
+        regexMap.put("*HDFS文件名称", new String[]{"^[a-zA-Z0-9_${}+*?][a-zA-Z0-9- @\\[\\]\\(\\)\\\"{}+\\ss$._*?#]{1,512}$", "以英文字母、数字、下划线或者以下字符${}+*?开头, 其余为英文字母、数字、下划线、空格、双引号和以下字符-{}+$*?.#[]()，且长度不能超过512！"});
+        regexMap.put("*HDFS文件路径", new String[]{"^[\\s\\S]{1,4000}$", "不能为空，且长度不能超过4000！"});
+        regexMap.put("*HDFS文件编码", new String[]{"^(UTF-8|ASCII|ISO-8859-1|GBK)$", "只能为UTF-8/ASCII/ISO-8859-1/GBK！"});
+        regexMap.put("*HDFS压缩方式", new String[]{"^(未压缩|gz|Snappy|snappy)$", "只能为未压缩/gz/Snappy/snappy！"});
+        regexMap.put("*HDFS文件格式", new String[]{"^(无|列分隔符文件|字符定长格式文件|字节定长格式文件)$", "只能为无/列分隔符文件/字符定长格式文件/字节定长格式文件！"});
+        regexMap.put("HDFS解析方式", new String[]{"^(|无|单引号|双引号)$", "只能为空/无/单引号/双引号！"});
+        regexMap.put("HDFS文件头行数", new String[]{"^([0-9]\\d{0,8}|)$", "只能为空/数字，且最大长度不超过2147483647！"});
+        regexMap.put("HDFS文件尾行数", new String[]{"^([0-9]\\d{0,8}|)$", "只能为空/数字，且最大长度不超过2147483647！"});
+        regexMap.put("*HDFS是否发布", new String[]{"^(Y|N)$", "只能为Y/N！"});
+        regexMap.put("HDFS表中文描述", new String[]{"^[\\s\\S]{0,1000}$", "长度不能超过1000！"});
+        regexMap.put("HDFS表英文描述", new String[]{"^[\\s\\S]{0,1000}$", "长度不能超过1000！"});
+
+        // gauss
+        regexMap.put("*Gauss模型", new String[]{"^[a-zA-Z_][a-zA-Z0-9_]{1,60}$", "以英文字母或者下划线开头, 其余为英文字母、数字、下划线，且长度不能超过60！"});
+        regexMap.put("*Gauss表中文别名", new String[]{"^[\\s\\S]{1,256}$", "不能为空，且长度不能超过256！"});
+        regexMap.put("*Gauss表英文别名", new String[]{"^[\\s\\S]{1,256}$", "不能为空，且长度不能超过256！"});
+        regexMap.put("*Gauss表作用范围", new String[]{"^(不共享|App间共享|APP间共享)$", "只能为不共享/App(APP)间共享！"});
+        regexMap.put("*Gauss数据源ID", new String[]{"^[\\s\\S]{1,64}$", "不能为空，且长度不能超过64！"});
+        regexMap.put("*Gauss数据库Schema", new String[]{"^[a-zA-Z0-9._]{1,64}$", "只允许输入字母、数字、下划线、点，且长度不能超过64！"});
+        regexMap.put("*Gauss存储规则", new String[]{"^(分表|合表)$", "只能为分表/合表！"});
+        regexMap.put("*Gauss分表粒度单位", new String[]{"^(|月|m|日|d)$", "只能为空/月(m)/日(d)！"});
+        regexMap.put("*Gauss存储表后缀格式", new String[]{"^(|COMMON|UTC)$", "只能为空/COMMON/UTC！"});
+        regexMap.put("*Gauss是否建表", new String[]{"^(Y|N)$", "只能为Y/N！"});
+        regexMap.put("*Gauss是否老化", new String[]{"^(Y|N)$", "只能为Y/N！"});
+        regexMap.put("*Gauss老化周期", new String[]{"^([0-9]\\d{0,3}|)$", "只能输入0~9999之间的整数/空！"});
+        regexMap.put("*Gauss数据粒度单位", new String[]{"^(无|月|周|日|小时|分钟)$", "只能为无/月/周/日/小时/分钟！"});
+        regexMap.put("*Gauss数据粒度", new String[]{"^(|0|1|5|15)$", "只能为空/0/1/5/15！"});
+        regexMap.put("*Gauss是否发布", new String[]{"^(Y|N)$", "只能为Y/N！"});
+        regexMap.put("*物理主表", new String[]{"^[a-zA-Z_][a-zA-Z0-9_]{1,60}$", "以英文字母或者下划线开头, 其余为英文字母、数字、下划线，且长度不能超过60！"});
+        regexMap.put("Gauss表中文描述", new String[]{"^[\\s\\S]{0,1000}$", "长度不能超过1000！"});
+        regexMap.put("Gauss表英文描述", new String[]{"^[\\s\\S]{0,1000}$", "长度不能超过1000！"});
+
+        // 列信息
+        regexMap.put("*编号", new String[]{"^[0-9]*$", "只能为数字！"});
+        regexMap.put("*列名称", new String[]{"^[a-zA-Z_][a-zA-Z0-9_]{1,60}$", "以英文字母或者下划线开头, 其余为英文字母、数字、下划线，且长度不能超过60！"});
+        regexMap.put("*列中文别名", new String[]{"^[\\s\\S]{1,128}$", "不能为空，且长度不能超过128！"});
+        regexMap.put("*列英文别名", new String[]{"^[\\s\\S]{1,128}$", "不能为空，且长度不能超过128！"});
+        regexMap.put("列类型", new String[]{"^(|STARTTIME|ENDTIME|TIMECOLUMN)$", "只能为空/STARTTIME/ENDTIME/TIMECOLUMN！"});
+        regexMap.put("长度", new String[]{"^([1-9]\\d*|)$", "只能为正整数/空！"});
+        regexMap.put("精度", new String[]{"^([0-9]*|)$", "只能为数字/空！"});
+        regexMap.put("格式", new String[]{"^(|yyyyMM|yyyyMMdd|yyyy/MM/dd|yyyy-MM-dd|yyyyMMddHHmmss|yyyy/MM/dd HH:mm:ss|yyyy-MM-dd HH:mm:ss|yyyy/MM/dd HH:mm:ss.SSS|yyyy-MM-dd HH:mm:ss.SSS)$", "只能为空/yyyyMM/yyyyMMdd(yyyy/MM/dd)(yyyy-MM-dd)/yyyyMMddHHmmss(yyyy/MM/dd HH:mm:ss)(yyyy-MM-dd HH:mm:ss)/yyyy/MM/dd HH:mm:ss.SSS(yyyy-MM-dd HH:mm:ss.SSS)！"});
+        regexMap.put("敏感属性", new String[]{"^(|IMSI|IMEI|TMSI|MSISDN|IMPI|IMPUTEL|IMPUSIP|EMAILADDR|USERNAME|MEID|ESN|URL|HOST|USSD|IP|IPV6)$", "只能为空/IMSI/IMEI/TMSI/MSISDN/IMPI/IMPUTEL/IMPUSIP/EMAILADDR/USERNAME/MEID/ESN/URL/HOST/USSD/IP/IPV6！"});
+        regexMap.put("*分区列", new String[]{"^(|Y|N)$", "只能为空/Y/N！"});
+        regexMap.put("*排序列顺序", new String[]{"^([0-9]*|)$", "只能为数字/空！"});
+        regexMap.put("分区列", new String[]{"^(|Y|N)$", "只能为空/Y/N！"});
+        regexMap.put("*字典列", new String[]{"^(|Y|N)$", "只能为空/Y/N！"});
+        regexMap.put("*非倒排序", new String[]{"^(|Y|N)$", "只能为空/Y/N！"});
+        regexMap.put("分区列顺序", new String[]{"^([0-9]*|)$", "只能为数字/空！"});
+        regexMap.put("*分表列", new String[]{"^(|Y|N)$", "只能为空/Y/N！"});
+        regexMap.put("分表列", new String[]{"^(|Y|N)$", "只能为空/Y/N！"});
+        regexMap.put("中文描述", new String[]{"^[\\s\\S]{0,512}$", "长度不能超过512！"});
+        regexMap.put("英文描述", new String[]{"^[\\s\\S]{0,512}$", "长度不能超过512！"});
+        regexMap.put("索引", new String[]{"^(|BTree|UPI|PI|SI)$", "只能为空/BTree/UPI/PI/SI！"});
+
+        // 逻辑模型
+        regexMap.put("*逻辑模型中文名称", new String[]{"^[\\s\\S]{1,256}$", "不能为空，且长度不能超过256！"});
+        regexMap.put("*逻辑模型英文名称", new String[]{"^[\\s\\S]{1,256}$", "不能为空，且长度不能超过256！"});
+        regexMap.put("逻辑模型中文描述", new String[]{"^[\\s\\S]{0,1000}$", "长度不能超过1000！"});
+        regexMap.put("逻辑模型英文描述", new String[]{"^[\\s\\S]{0,1000}$", "长度不能超过1000！"});
+        regexMap.put("标签名", new String[]{"^[\\s\\S]{0,1000}$", "长度不能超过1000！"});
+        regexMap.put("*实体类型", new String[]{"^(普通表|事实表|维度表|维度拉链表)$", "只能为普通表/事实表/维度表/维度拉链表！"});
+        regexMap.put("*业务类型", new String[]{"^(通用业务|xdr|sdr|bkpi|dim|cfg)$", "只能为通用业务/xdr/sdr/bkpi/dim/cfg！"});
+        regexMap.put("*作用范围", new String[]{"^(不共享|App间共享|APP间共享)$", "只能为不共享/App(APP)间共享！"});
+
+        // 逻辑列信息
+        regexMap.put("*属性名称", new String[]{"^[a-zA-Z_][a-zA-Z0-9_]{1,60}$", "以英文字母或者下划线开头, 其余为英文字母、数字、下划线，且长度不能超过60！"});
+        regexMap.put("*属性中文别名", new String[]{"^[\\s\\S]{1,128}$", "不能为空，且长度不能超过128！"});
+        regexMap.put("*属性英文别名", new String[]{"^[\\s\\S]{1,128}$", "不能为空，且长度不能超过128！"});
+    }
+}
