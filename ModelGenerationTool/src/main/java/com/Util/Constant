@@ -1,0 +1,72 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2022-2022. All rights reserved.
+ */
+
+package com.huawei.weautomate.cube.Util;
+
+/**
+ * 功能描述
+ *
+ * @since 2022-08-01
+ */
+public class Constant {
+    /**
+     * sheetName-表清单
+     */
+    public static final String SHEET_NAME_TABLE = "表清单";
+
+    /**
+     * sheetName-点位信息+逻辑模型
+     */
+    public static final String SHEET_NAME_POINT = "点位信息+逻辑模型";
+
+    /**
+     * sheetName-Kafka模型
+     */
+    public static final String SHEET_NAME_KAFKA = "Kafka模型";
+
+    /**
+     * sheetName-Clickhouse模型
+     */
+    public static final String SHEET_NAME_CLICKHOUSE = "Clickhouse模型";
+
+    /**
+     * sheetName-Carbon模型
+     */
+    public static final String SHEET_NAME_CARBON = "Carbon模型";
+
+    /**
+     * sheetName-HDFS模型
+     */
+    public static final String SHEET_NAME_HDFS = "HDFS模型";
+
+    /**
+     * sheetName-GAUSS模型
+     */
+    public static final String SHEET_NAME_GAUSS = "GaussDB模型";
+
+    /**
+     * 数据源类型
+     */
+    public static final String DATA_SOURCE_TYPE_KAFKA = "KAFKA";
+
+    /**
+     * 数据源类型
+     */
+    public static final String DATA_SOURCE_TYPE_CLICK = "ClickHouse";
+
+    /**
+     * 数据源类型
+     */
+    public static final String DATA_SOURCE_TYPE_CARBON = "CARBON";
+
+    /**
+     * 数据源类型
+     */
+    public static final String DATA_SOURCE_TYPE_HDFS = "HDFS";
+
+    /**
+     * 数据源类型
+     */
+    public static final String DATA_SOURCE_TYPE_GAUSS = "Gaussdb100V1R3";
+}
