@@ -1,0 +1,671 @@
+package com.cube.listener;
+
+import com.huawei.weautomate.cube.RegexRelation;
+import com.huawei.weautomate.cube.Util.Constant;
+import com.huawei.weautomate.cube.Util.JframeLogUtil;
+import com.huawei.weautomate.cube.Util.ZipUtils;
+import com.huawei.weautomate.cube.entity.ColumnInfo;
+import com.huawei.weautomate.cube.entity.ModelInfo;
+import com.huawei.weautomate.cube.entity.logical.AttributeColumnRel;
+import com.huawei.weautomate.cube.entity.logical.LogicPhyRel;
+import com.huawei.weautomate.cube.entity.logical.LogicPhyRelList;
+import com.huawei.weautomate.cube.entity.logical.LogicalAttribute;
+import com.huawei.weautomate.cube.entity.logical.LogicalAttributeInfo;
+import com.huawei.weautomate.cube.entity.logical.LogicalEntity;
+import com.huawei.weautomate.cube.entity.logical.LogicalModelInfo;
+import com.huawei.weautomate.cube.entity.physical.PhyColumnInfo;
+import com.huawei.weautomate.cube.entity.physical.PhyColumnList;
+import com.huawei.weautomate.cube.entity.physical.PhyStoreInfo;
+import com.huawei.weautomate.cube.entity.physical.PhyTableInfo;
+import com.huawei.weautomate.cube.entity.physical.PhysicalModel;
+
+import com.alibaba.excel.context.AnalysisContext;
+import com.alibaba.excel.event.AnalysisEventListener;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.SerializerFeature;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+
+import javax.swing.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+/**
+ * 功能描述
+ *
+ * @since 2022-08-01
+ */
+public class DataListener extends AnalysisEventListener<Map<Integer, String>> {
+    private final AtomicInteger sheetTotal;
+    private final String projectName;
+
+    private final List<LogicalEntity> logicalEntities = new ArrayList<>();
+
+    private final SimpleDateFormat date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+    public DataListener(AtomicInteger sheetTotal, String projectName) {
+        this.sheetTotal = sheetTotal;
+        this.projectName = projectName;
+    }
+
+    // kafka表基本信息
+    List<ModelInfo> kafkaInfos = new ArrayList<>();
+    // clickHouse表基本信息
+    List<ModelInfo> clickHouseInfos = new ArrayList<>();
+    // carbon表基本信息
+    List<ModelInfo> carbonInfos = new ArrayList<>();
+    // HDFS表基本信息
+    List<ModelInfo> hdfsInfos = new ArrayList<>();
+    // Gauss表基本信息
+    List<ModelInfo> gaussInfos = new ArrayList<>();
+    // kafka列信息
+    List<ColumnInfo> kafkaColumns = new ArrayList<>();
+    // clickHouse列信息
+    List<ColumnInfo> clickHouseColumns = new ArrayList<>();
+    // carbon列信息
+    List<ColumnInfo> carbonColumns = new ArrayList<>();
+    // hdfs列信息
+    List<ColumnInfo> hdfsColumns = new ArrayList<>();
+    // gauss列信息
+    List<ColumnInfo> gaussColumns = new ArrayList<>();
+
+
+    List<LogicalAttributeInfo> logicalColumns = new ArrayList<>();
+
+    // 表清单头记录
+    Map<Integer, String> modelHeadMap = new HashMap<>();
+    // 点位信息头记录
+    Map<Integer, String> pointHeadMap = new HashMap<>();
+    // kafka模型头记录
+    Map<Integer, String> kafkaHeadMap = new HashMap<>();
+    // clickhouse模型头记录
+    Map<Integer, String> clickHouseHeadMap = new HashMap<>();
+    // carbon模型头记录
+    Map<Integer, String> carbonHeadMap = new HashMap<>();
+    // hdfs模型头记录
+    Map<Integer, String> hdfsHeadMap = new HashMap<>();
+    // gauss模型头记录
+    Map<Integer, String> gaussHeadMap = new HashMap<>();
+
+    // 返回信息
+    StringBuffer checkResult = new StringBuffer();
+    // 列信息记录用于判断是否有重复列
+    Map<String, String> columnRepeateCheck = new HashMap<>();
+
+    /**
+     * 重写invokeHeadMap方法，获去表头
+     *
+     * @param headMap 表头
+     * @param context 上下文
+     */
+    @Override
+    public void invokeHeadMap(Map<Integer, String> headMap, AnalysisContext context) {
+        String sheetName = context.readSheetHolder().getSheetName();
+        // 表头记录下来
+        if (StringUtils.equals(Constant.SHEET_NAME_TABLE, sheetName)) {
+            modelHeadMap = headMap;
+        }else if (StringUtils.equals(Constant.SHEET_NAME_POINT, sheetName)) {
+            pointHeadMap = headMap;
+        }else if (StringUtils.equals(Constant.SHEET_NAME_KAFKA, sheetName)) {
+            kafkaHeadMap = headMap;
+        }else if (StringUtils.equals(Constant.SHEET_NAME_CLICKHOUSE, sheetName)) {
+            clickHouseHeadMap = headMap;
+        }else if (StringUtils.equals(Constant.SHEET_NAME_CARBON, sheetName)) {
+            carbonHeadMap = headMap;
+        }else if (StringUtils.equals(Constant.SHEET_NAME_HDFS, sheetName)) {
+            hdfsHeadMap = headMap;
+        }else if (StringUtils.equals(Constant.SHEET_NAME_GAUSS, sheetName)) {
+            gaussHeadMap = headMap;
+        }
+    }
+
+    /**
+     * 根据sheetname去获取不同的信息
+     *
+     * @param content
+     * @param analysisContext
+     */
+    @Override
+    public void invoke(Map<Integer, String> content, AnalysisContext analysisContext) {
+        String sheetName = analysisContext.readSheetHolder().getSheetName();
+        int rowIndex = analysisContext.readSheetHolder().getRowIndex() + 1;
+        // 序号或编号为空认为是空行，空行则跳过
+        if (StringUtils.isBlank(content.get(0)) || StringUtils.isBlank(content.get(1))) return;
+        try {
+            if (StringUtils.equals(Constant.SHEET_NAME_TABLE, sheetName)) {
+                // 校验
+                validateCheck(sheetName, rowIndex, modelHeadMap, content);
+                // 取值
+                getModelInfos(content);
+            } else if (StringUtils.equals(Constant.SHEET_NAME_KAFKA, sheetName)) {
+                // 校验
+                validateCheck(sheetName, rowIndex, kafkaHeadMap, content);
+                // 取值
+                getColumnInfos(content, Constant.DATA_SOURCE_TYPE_KAFKA);
+            } else if (StringUtils.equals(Constant.SHEET_NAME_CLICKHOUSE, sheetName)) {
+                // 校验
+                validateCheck(sheetName, rowIndex, clickHouseHeadMap, content);
+                // 取值
+                getColumnInfos(content, Constant.DATA_SOURCE_TYPE_CLICK);
+            } else if (StringUtils.equals(Constant.SHEET_NAME_CARBON, sheetName)) {
+                // 校验
+                validateCheck(sheetName, rowIndex, carbonHeadMap, content);
+                // 取值
+                getColumnInfos(content, Constant.DATA_SOURCE_TYPE_CARBON);
+            } else if (StringUtils.equals(Constant.SHEET_NAME_HDFS, sheetName)) {
+                // 校验
+                validateCheck(sheetName, rowIndex, hdfsHeadMap, content);
+                // 取值
+                getColumnInfos(content, Constant.DATA_SOURCE_TYPE_HDFS);
+            } else if (StringUtils.equals(Constant.SHEET_NAME_GAUSS, sheetName)) {
+                // 校验
+                validateCheck(sheetName, rowIndex, gaussHeadMap, content);
+                // 取值
+                getColumnInfos(content, Constant.DATA_SOURCE_TYPE_GAUSS);
+            } else if (StringUtils.equals(Constant.SHEET_NAME_POINT, sheetName)) {
+                // 校验
+                validateCheck(sheetName, rowIndex, pointHeadMap, content);
+                // 取值
+                getLogicalInfos(content);
+            }
+        }catch (Exception e){
+            JframeLogUtil.log(e.getMessage(),"ERROR");
+            e.printStackTrace();
+        }
+    }
+
+    private void getKafkaLogicPhyReList(List<ModelInfo> Models, LogicalEntity logicalEntity,
+                                        List<LogicalAttributeInfo> logicalColumns, ArrayList<LogicPhyRelList> logicPhyRelLists) {
+        LogicPhyRelList phyRelListKafka = new LogicPhyRelList();
+        ArrayList<AttributeColumnRel> attributeColumnRelsKa = new ArrayList<>();
+        for (ModelInfo kafkaModelInfo : Models) {
+            Long moduleID = getModuleIdByDataSource("KAFKA", kafkaModelInfo.getDataSourceId(), null);
+            getLogicPhyRel(logicalEntity, logicalColumns, phyRelListKafka,
+                    attributeColumnRelsKa, kafkaModelInfo, moduleID);
+        }
+        logicPhyRelLists.add(phyRelListKafka);
+    }
+
+    private void getCkLogicPhyReList(List<ModelInfo> clickHouseModels, LogicalEntity logicalEntity,
+                                     List<LogicalAttributeInfo> logicalColumns, ArrayList<LogicPhyRelList> logicPhyRelLists) {
+        LogicPhyRelList phyRelListClick = new LogicPhyRelList();
+        ArrayList<AttributeColumnRel> attributeColumnRelsCh = new ArrayList<>();
+        for (ModelInfo clickHouseModelInfo : clickHouseModels) {
+            Long moduleID = getModuleIdByDataSource("ClickHouse", clickHouseModelInfo.getDataSourceId(),
+                    clickHouseModelInfo.getDataSourceSchema());
+            getLogicPhyRel(logicalEntity, logicalColumns, phyRelListClick, attributeColumnRelsCh, clickHouseModelInfo, moduleID);
+        }
+        logicPhyRelLists.add(phyRelListClick);
+    }
+
+    private void getCbLogicPhyReList(List<ModelInfo> carbonModels, LogicalEntity logicalEntity,
+                                     List<LogicalAttributeInfo> logicalColumns, ArrayList<LogicPhyRelList> logicPhyRelLists) {
+        LogicPhyRelList phyRelListCb = new LogicPhyRelList();
+        ArrayList<AttributeColumnRel> attributeColumnRelsCb = new ArrayList<>();
+        for (ModelInfo carbonModelInfo : carbonModels) {
+            Long moduleID = getModuleIdByDataSource("CARBON", carbonModelInfo.getDataSourceId(), carbonModelInfo.getDataSourceSchema());
+            getLogicPhyRel(logicalEntity, logicalColumns, phyRelListCb, attributeColumnRelsCb, carbonModelInfo, moduleID);
+        }
+        logicPhyRelLists.add(phyRelListCb);
+    }
+
+    private void getHdfsLogicPhyReList(List<ModelInfo> hdfsModels, LogicalEntity logicalEntity,
+                                       List<LogicalAttributeInfo> logicalColumns, ArrayList<LogicPhyRelList> logicPhyRelLists) {
+        LogicPhyRelList phyRelList = new LogicPhyRelList();
+        ArrayList<AttributeColumnRel> attributeColumnRels = new ArrayList<>();
+        for (ModelInfo hdfsModel : hdfsModels) {
+            Long moduleID = getModuleIdByDataSource("HDFS", hdfsModel.getDataSourceId(), hdfsModel.getDataSourceSchema());
+            getLogicPhyRel(logicalEntity, logicalColumns, phyRelList, attributeColumnRels, hdfsModel, moduleID);
+        }
+        logicPhyRelLists.add(phyRelList);
+    }
+
+    private void getGaussLogicPhyReList(List<ModelInfo> gaussModels, LogicalEntity logicalEntity,
+                                        List<LogicalAttributeInfo> logicalColumns, ArrayList<LogicPhyRelList> logicPhyRelLists) {
+        LogicPhyRelList phyRelList = new LogicPhyRelList();
+        ArrayList<AttributeColumnRel> attributeColumnRels = new ArrayList<>();
+        for (ModelInfo gaussModel : gaussModels) {
+            Long moduleID = getModuleIdByDataSource("Gaussdb100V1R3", gaussModel.getDataSourceId(), gaussModel.getDataSourceSchema());
+            getLogicPhyRel(logicalEntity, logicalColumns, phyRelList, attributeColumnRels, gaussModel, moduleID);
+        }
+        logicPhyRelLists.add(phyRelList);
+    }
+
+    private void getLogicPhyRel(LogicalEntity logicalEntity, List<LogicalAttributeInfo> logicalColumns, LogicPhyRelList phyRelListKafka, ArrayList<AttributeColumnRel> attributeColumnRelsKa, ModelInfo kafkaModelInfo, Long moduleID) {
+        LogicPhyRel logicPhyRel;
+        logicPhyRel = new LogicPhyRel();
+        if (kafkaModelInfo.getIsDefault() != null && kafkaModelInfo.getIsDefault()) {
+            logicPhyRel.setIsDefault("Y");
+        } else {
+            logicPhyRel.setIsDefault("N");
+        }
+        logicPhyRel.setTableId(moduleID + "-" + kafkaModelInfo.getPhysicalModel()); // 数据源id+模型名称
+        logicPhyRel.setTableCode(kafkaModelInfo.getPhysicalModel());
+        logicPhyRel.setEntityId(logicalEntity.getEntityId());
+        logicPhyRel.setLastModTime(date.format(new Date()));
+        phyRelListKafka.setLogicPhyRel(logicPhyRel);
+
+        for (LogicalAttributeInfo logicalColumn : logicalColumns) {
+            AttributeColumnRel attributeColumnRel = new AttributeColumnRel();
+            attributeColumnRel.setEntityId(logicalEntity.getEntityId());
+            attributeColumnRel.setEntityCode(logicalEntity.getEntityCode());
+            attributeColumnRel.setAttributeId(logicalColumn.getLogicalAttribute().getAttributeId());
+            attributeColumnRel.setAttributeCode(logicalColumn.getLogicalAttribute().getAttributeCode());
+            attributeColumnRel.setTableId(moduleID + "-" + kafkaModelInfo.getPhysicalModel()); // 数据源id+模型名称
+            attributeColumnRel.setTableCode(kafkaModelInfo.getPhysicalModel());
+            attributeColumnRel.setColumnId(moduleID + "-" + kafkaModelInfo.getPhysicalModel() + "-"
+                    + logicalColumn.getLogicalAttribute().getAttributeCode());
+            attributeColumnRel.setColumnCode(logicalColumn.getLogicalAttribute().getAttributeCode());
+            attributeColumnRel.setMapPhyCol("[" + logicalColumn.getLogicalAttribute().getAttributeCode() + "]");
+            attributeColumnRel.setDataSourceId(String.valueOf(moduleID));
+            attributeColumnRelsKa.add(attributeColumnRel);
+        }
+        phyRelListKafka.setAttributeColumnRelList(attributeColumnRelsKa);
+    }
+
+    private void getLogicalEntityInfo(LogicalEntity logicalEntity) {
+        String time = date.format(System.currentTimeMillis());
+        logicalEntity.setTenantId("1002");
+        logicalEntity.setCatalogId("modellayer0");
+        logicalEntity.setValidStartTime(time);
+        logicalEntity.setValidEndTime("2099-12-31 01:01:01");
+        logicalEntity.setEntityStatus("release");
+        logicalEntity.setStructType("DSL MODEL");
+        logicalEntity.setIsShare(true);
+        logicalEntity.setIsOpen(true);
+        logicalEntity.setOpenFlag(1);
+        logicalEntity.setIsInoperable(false);
+        logicalEntity.setMetadataSrcType("WEB_CREATE");
+        logicalEntity.setAppName(projectName);
+        logicalEntity.setGroupName(projectName);
+        logicalEntity.setCreateOperator("admin");
+        logicalEntity.setCreateTime(time);
+        logicalEntity.setLastModTime(time);
+        logicalEntity.setLastModOperator("admin");
+    }
+
+    /**
+     * json文件写入逻辑模型
+     *
+     * @param logicalModelInfo 逻辑模型
+     */
+    private void writeLogicalJsonFile(LogicalModelInfo logicalModelInfo) {
+        String jsonString = JSONObject.toJSONString(logicalModelInfo, SerializerFeature.WriteMapNullValue);
+        String path =
+                System.getProperty("user.dir").concat("\\logical\\") + logicalModelInfo.getLogicalEntity().getEntityId().concat(".json");
+        generateJsonFile(jsonString, path);
+        JframeLogUtil.log("模型:["+logicalModelInfo.getLogicalEntity().getEntityCode()+"] 解析成功", "INFO");
+    }
+
+    /**
+     * 每个sheet读取完都会调用一次，所以需要限制所有的sheet遍历完才能走业务
+     *
+     * @param analysisContext
+     */
+    @Override
+    public void doAfterAllAnalysed(AnalysisContext analysisContext) {
+
+        if (sheetTotal.decrementAndGet() > 0) {
+            return;
+        }
+        // 判断校验结果
+        if (checkResult.length() > 0){
+//            System.out.println(checkResult.toString());
+            JframeLogUtil.log("解析文件错误", "ERROR");
+            JOptionPane.showMessageDialog(null,"解析文件错误","提示",JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // 按模型code分组
+        Map<String, List<ColumnInfo>> kafkaColumnMap =
+                kafkaColumns.stream().collect(Collectors.groupingBy(ColumnInfo::getModelCode));
+        Map<String, List<ColumnInfo>> clickColumnMap =
+                clickHouseColumns.stream().collect(Collectors.groupingBy(ColumnInfo::getModelCode));
+        Map<String, List<ColumnInfo>> carbonColumnMap =
+                carbonColumns.stream().collect(Collectors.groupingBy(ColumnInfo::getModelCode));
+        Map<String, List<ColumnInfo>> hdfsColumnMap =
+                hdfsColumns.stream().collect(Collectors.groupingBy(ColumnInfo::getModelCode));
+        Map<String, List<ColumnInfo>> gaussColumnMap =
+                gaussColumns.stream().collect(Collectors.groupingBy(ColumnInfo::getModelCode));
+
+        Map<String, List<LogicalAttributeInfo>> logicalAttributeMap =
+                logicalColumns.stream().collect(Collectors.groupingBy(logicalAttributeInfo
+                        -> logicalAttributeInfo.getLogicalAttribute().getEntityId()));
+
+        // 组装kafka物理模型 json
+        for (ModelInfo kafka : kafkaInfos) {
+            String dataSourceId = kafka.getDataSourceId();
+            Long moduleID = getModuleIdByDataSource("KAFKA", dataSourceId, null);
+            PhysicalModel physicalModel = new PhysicalModel();
+            // 模型基本信息
+            PhyTableInfo phyTableInfo = commonTableInfo(kafka);
+            phyTableInfo.setTableId(moduleID + "-" + kafka.getPhysicalModel()); // 数据源id+模型名称
+            physicalModel.setPhyTableInfo(phyTableInfo);
+
+            // 数据源信息
+            PhyStoreInfo phyStoreInfo = commonStoreInfo(kafka);
+            phyStoreInfo.setIsSelfPartition(false); // 暂为false
+            phyStoreInfo.setSelfPartition(false); // 暂为false
+            phyStoreInfo.setIsAgeing(true); // 默认会老化
+            phyStoreInfo.setTableId(moduleID + "-" + kafka.getPhysicalModel()); // 数据源id+模型名称
+            phyStoreInfo.setDataSourceType("KAFKA");
+            phyStoreInfo.setSaveType("None_SaveType"); // kafka默认为"None_SaveType"合表
+            phyStoreInfo.setStoreTypeId("Topic_StoreType"); // 暂为Topic_StoreType
+            phyStoreInfo.setTableRule(kafka.getTopic());
+            phyStoreInfo.setModuleID(moduleID); // 数据源id
+            phyStoreInfo.setEventPartitions(kafka.getEventPartitions());
+            phyStoreInfo.setEventReplications(kafka.getEventReplications());
+            physicalModel.setPhyStoreInfo(phyStoreInfo);
+
+            // 列信息
+            List<PhyColumnList> phyColumnList = new ArrayList();
+            List<ColumnInfo> columnInfos = kafkaColumnMap.get(kafka.getPhysicalModel());
+            if (columnInfos != null && columnInfos.size() > 0) {
+                for (ColumnInfo column : columnInfos) {
+                    PhyColumnList phyColumn = new PhyColumnList();
+                    PhyColumnInfo phyColumnInfo = commonColumnInfo(column, phyTableInfo.getCreateTime());
+                    phyColumnInfo.setColumnId(moduleID + "-" + kafka.getPhysicalModel() + "-" + column.getColumnCode()); // 数据源id+模型code+列code
+                    phyColumnInfo.setTableId(moduleID + "-" + kafka.getPhysicalModel());
+                    phyColumnInfo.setTableName(kafka.getPhysicalModel());
+                    phyColumn.setPhyColumnInfo(phyColumnInfo);
+                    phyColumnList.add(phyColumn);
+                }
+            }else {
+                JframeLogUtil.log(">>>>>>>>>>physicalModel:" + kafka.getPhysicalModel() + " no have column infos.", "WARN");
+                continue;
+            }
+            physicalModel.setPhyColumnList(phyColumnList);
+
+            // 生成kafka模型json
+            writeToJson(moduleID, kafka.getPhysicalModel(), physicalModel);
+        }
+
+        // 模型为clickhouse时
+        for (ModelInfo click : clickHouseInfos) {
+            Long moduleID = getModuleIdByDataSource("ClickHouse", click.getDataSourceId(), click.getDataSourceSchema());
+            PhysicalModel physicalModel = new PhysicalModel();
+            // 模型基本信息
+            PhyTableInfo phyTableInfo = commonTableInfo(click);
+            phyTableInfo.setTableId(moduleID + "-" + click.getPhysicalModel()); // 数据源id+模型名称
+            physicalModel.setPhyTableInfo(phyTableInfo);
+
+            // 数据源信息
+            PhyStoreInfo phyStoreInfo = commonStoreInfo(click);
+            phyStoreInfo.setAgeingPolicy("None"); // 默认老化策略是None
+            phyStoreInfo.setTableId(moduleID + "-" + click.getPhysicalModel()); // 数据源id+模型名称
+            phyStoreInfo.setDataSourceType("ClickHouse");
+            phyStoreInfo.setStoreTypeId("Table_StoreType"); // 暂为Topic_StoreType
+            phyStoreInfo.setModuleID(moduleID); // 数据源id
+            physicalModel.setPhyStoreInfo(phyStoreInfo);
+
+            // 列信息
+            List<PhyColumnList> phyColumnList = new ArrayList();
+            List<ColumnInfo> columnInfos = clickColumnMap.get(click.getPhysicalModel());
+            if (columnInfos != null && columnInfos.size() > 0) {
+                for (ColumnInfo column : columnInfos) {
+                    PhyColumnList phyColumn = new PhyColumnList();
+                    PhyColumnInfo phyColumnInfo = commonColumnInfo(column, phyTableInfo.getCreateTime());
+                    phyColumnInfo.setColumnId(moduleID + "-" + click.getPhysicalModel() + "-" + column.getColumnCode()); // 数据源id+模型code+列code
+                    phyColumnInfo.setTableId(moduleID + "-" + click.getPhysicalModel());
+                    phyColumnInfo.setTableName(click.getPhysicalModel());
+                    phyColumn.setPhyColumnInfo(phyColumnInfo);
+                    // 如果是分区列，需要修改PartitionKey的值
+                    if(column.getIsSplitPartition()) {
+                        phyStoreInfo.setPartitionKey(column.getColumnCode());
+                        physicalModel.setPhyStoreInfo(phyStoreInfo);
+                    }
+                    phyColumnList.add(phyColumn);
+                }
+            }else {
+                JframeLogUtil.log(">>>>>>>>>>physicalModel:" + click.getPhysicalModel() + " no have column infos.", "WARN");
+                continue;
+            }
+            physicalModel.setPhyColumnList(phyColumnList);
+
+            // 生成clickHouse模型json
+            writeToJson(moduleID, click.getPhysicalModel(), physicalModel);
+        }
+
+        // 模型为Carbon时
+        for (ModelInfo carbon : carbonInfos) {
+            Long moduleID = getModuleIdByDataSource("CARBON", carbon.getDataSourceId(), carbon.getDataSourceSchema());
+            PhysicalModel physicalModel = new PhysicalModel();
+            // 模型基本信息
+            PhyTableInfo phyTableInfo = commonTableInfo(carbon);
+            phyTableInfo.setTableId(moduleID + "-" + carbon.getPhysicalModel()); // 数据源id+模型名称
+            physicalModel.setPhyTableInfo(phyTableInfo);
+
+            // 数据源信息
+            PhyStoreInfo phyStoreInfo = commonStoreInfo(carbon);
+            phyStoreInfo.setAgeingPolicy("None"); // 默认老化策略是None
+            phyStoreInfo.setTableId(moduleID + "-" + carbon.getPhysicalModel()); // 数据源id+模型名称
+            phyStoreInfo.setDataSourceType("CARBON");
+            phyStoreInfo.setStoreTypeId("Table_StoreType"); // 暂为Topic_StoreType
+            phyStoreInfo.setModuleID(moduleID); // 数据源id
+            physicalModel.setPhyStoreInfo(phyStoreInfo);
+
+            // 列信息
+            List<PhyColumnList> phyColumnList = new ArrayList();
+            List<ColumnInfo> columnInfos = carbonColumnMap.get(carbon.getPhysicalModel());
+            if (columnInfos != null && columnInfos.size() > 0) {
+                for (ColumnInfo column : columnInfos) {
+                    PhyColumnList phyColumn = new PhyColumnList();
+                    PhyColumnInfo phyColumnInfo = commonColumnInfo(column, phyTableInfo.getCreateTime());
+                    phyColumnInfo
+                            .setColumnId(moduleID + "-" + carbon.getPhysicalModel() + "-" + column.getColumnCode()); // 数据源id+模型code+列code
+                    phyColumnInfo.setTableId(moduleID + "-" + carbon.getPhysicalModel());
+                    phyColumnInfo.setTableName(carbon.getPhysicalModel());
+                    phyColumn.setPhyColumnInfo(phyColumnInfo);
+                    phyColumnList.add(phyColumn);
+                }
+            }else {
+                JframeLogUtil.log(">>>>>>>>>>physicalModel:" + carbon.getPhysicalModel() + " no have column infos.", "WARN");
+                continue;
+            }
+            physicalModel.setPhyColumnList(phyColumnList);
+
+            // 生成carbon模型json
+            writeToJson(moduleID, carbon.getPhysicalModel(), physicalModel);
+        }
+
+        // 模型为HDFS时
+        for (ModelInfo hdfs : hdfsInfos) {
+            Long moduleID = getModuleIdByDataSource("HDFS", hdfs.getDataSourceId(), hdfs.getDataSourceSchema());
+            PhysicalModel physicalModel = new PhysicalModel();
+            // 模型基本信息
+            PhyTableInfo phyTableInfo = commonTableInfo(hdfs);
+            phyTableInfo.setTableId(moduleID + "-" + hdfs.getPhysicalModel()); // 数据源id+模型名称
+            physicalModel.setPhyTableInfo(phyTableInfo);
+
+            // 数据源信息
+            PhyStoreInfo phyStoreInfo = commonStoreInfo(hdfs);
+            phyStoreInfo.setIsCreateTable(true);
+            phyStoreInfo.setIsSelfPartition(false);
+            phyStoreInfo.setSelfPartition(false);
+            phyStoreInfo.setAgeingPolicy("None"); // 默认老化策略是None
+            phyStoreInfo.setTableId(moduleID + "-" + hdfs.getPhysicalModel()); // 数据源id+模型名称
+            phyStoreInfo.setDataSourceType("HDFS");
+            phyStoreInfo.setStoreTypeId("File_StoreType"); // 暂为Topic_StoreType
+            phyStoreInfo.setModuleID(moduleID); // 数据源id
+            physicalModel.setPhyStoreInfo(phyStoreInfo);
+
+            // 列信息
+            List<PhyColumnList> phyColumnList = new ArrayList();
+            List<ColumnInfo> columnInfos = hdfsColumnMap.get(hdfs.getPhysicalModel());
+            if (columnInfos != null && columnInfos.size() > 0) {
+                for (ColumnInfo column : columnInfos) {
+                    PhyColumnList phyColumn = new PhyColumnList();
+                    PhyColumnInfo phyColumnInfo = commonColumnInfo(column, phyTableInfo.getCreateTime());
+                    phyColumnInfo
+                            .setColumnId(moduleID + "-" + hdfs.getPhysicalModel() + "-" + column.getColumnCode()); // 数据源id+模型code+列code
+                    phyColumnInfo.setTableId(moduleID + "-" + hdfs.getPhysicalModel());
+                    phyColumnInfo.setTableName(hdfs.getPhysicalModel());
+                    phyColumn.setPhyColumnInfo(phyColumnInfo);
+                    phyColumnList.add(phyColumn);
+                }
+            }else {
+                JframeLogUtil.log(">>>>>>>>>>physicalModel:" + hdfs.getPhysicalModel() + " no have column infos.", "WARN");
+                continue;
+            }
+            physicalModel.setPhyColumnList(phyColumnList);
+
+            // 生成hdfs模型json
+            writeToJson(moduleID, hdfs.getPhysicalModel(), physicalModel);
+        }
+
+        // 模型为gauss时
+        for (ModelInfo gauss : gaussInfos) {
+            Long moduleID = getModuleIdByDataSource("Gaussdb100V1R3", gauss.getDataSourceId(), gauss.getDataSourceSchema());
+            PhysicalModel physicalModel = new PhysicalModel();
+            // 模型基本信息
+            PhyTableInfo phyTableInfo = commonTableInfo(gauss);
+            phyTableInfo.setTableId(moduleID + "-" + gauss.getPhysicalModel()); // 数据源id+模型名称
+            physicalModel.setPhyTableInfo(phyTableInfo);
+
+            // 数据源信息
+            PhyStoreInfo phyStoreInfo = commonStoreInfo(gauss);
+            phyStoreInfo.setAgeingPolicy("None"); // 默认老化策略是None
+            phyStoreInfo.setTableId(moduleID + "-" + gauss.getPhysicalModel()); // 数据源id+模型名称
+            phyStoreInfo.setDataSourceType("Gaussdb100V1R3");
+            phyStoreInfo.setStoreTypeId("Table_StoreType"); // 暂为Topic_StoreType
+            phyStoreInfo.setModuleID(moduleID); // 数据源id
+            phyStoreInfo.setIsSelfPartition(false);
+            phyStoreInfo.setSelfPartition(false);
+            physicalModel.setPhyStoreInfo(phyStoreInfo);
+
+            // 列信息
+            List<PhyColumnList> phyColumnList = new ArrayList();
+            List<ColumnInfo> columnInfos = gaussColumnMap.get(gauss.getPhysicalModel());
+            if (columnInfos != null && columnInfos.size() > 0) {
+                for (ColumnInfo column : columnInfos) {
+                    PhyColumnList phyColumn = new PhyColumnList();
+                    PhyColumnInfo phyColumnInfo = commonColumnInfo(column, phyTableInfo.getCreateTime());
+                    phyColumnInfo.setColumnId(moduleID + "-" + gauss.getPhysicalModel() + "-" + column.getColumnCode()); // 数据源id+模型code+列code
+                    phyColumnInfo.setTableId(moduleID + "-" + gauss.getPhysicalModel());
+                    phyColumnInfo.setTableName(gauss.getPhysicalModel());
+                    phyColumn.setPhyColumnInfo(phyColumnInfo);
+                    phyColumnList.add(phyColumn);
+                }
+            }else {
+                JframeLogUtil.log(">>>>>>>>>>physicalModel:" + gauss.getPhysicalModel() + " no have column infos.", "WARN");
+                continue;
+            }
+            physicalModel.setPhyColumnList(phyColumnList);
+
+            // 生成gauss模型json
+            writeToJson(moduleID, gauss.getPhysicalModel(), physicalModel);
+        }
+
+        // 生成逻辑模型文件
+        for (String key : logicalAttributeMap.keySet()) {
+            // 根据逻辑模型获取物理模型数据
+            List<ModelInfo> kafkaModels = kafkaInfos.stream().filter(kafkaModelInfo ->
+                    key.equals(kafkaModelInfo.getLogicalModel())).collect(Collectors.toList());
+            List<ModelInfo> clickHouses = clickHouseInfos.stream().filter(clickHouseModelInfo ->
+                    key.equals(clickHouseModelInfo.getLogicalModel())).collect(Collectors.toList());
+            List<ModelInfo> carbons = carbonInfos.stream().filter(carbonModelInfo ->
+                    key.equals(carbonModelInfo.getLogicalModel())).collect(Collectors.toList());
+            List<ModelInfo> hdfsList = hdfsInfos.stream().filter(hdfsInfo ->
+                    key.equals(hdfsInfo.getLogicalModel())).collect(Collectors.toList());
+            List<ModelInfo> gaussInfoList = gaussInfos.stream().filter(gaussInfo ->
+                    key.equals(gaussInfo.getLogicalModel())).collect(Collectors.toList());
+
+            List<LogicalEntity> logicalEntityList = logicalEntities.stream().filter(logicalEntity ->
+                    key.equals(logicalEntity.getEntityId())).collect(Collectors.toList());
+
+            // 判断两个sheet页中逻辑模型名称是否相同
+            if (CollectionUtils.isEmpty(kafkaModels) && CollectionUtils.isEmpty(clickHouses)
+                    && CollectionUtils.isEmpty(carbons) && CollectionUtils.isEmpty(hdfsList)
+                    && CollectionUtils.isEmpty(gaussInfoList) ) {
+                JframeLogUtil.log("[表清单]中逻辑模型名称与[点位信息+逻辑模型]中逻辑模型名称不同,生成:" + key + "逻辑模型失败", "ERROR");
+                break;
+            }
+
+            LogicalEntity logicalEntity = logicalEntityList.get(0);
+            List<LogicalAttributeInfo> logicalAttributeInfos = logicalAttributeMap.get(key);
+
+            ArrayList<LogicPhyRelList> logicPhyRelLists = new ArrayList<>();
+            if (!kafkaModels.isEmpty()) {
+                getKafkaLogicPhyReList(kafkaModels, logicalEntity, logicalAttributeInfos, logicPhyRelLists);
+            }
+            if (!clickHouses.isEmpty()) {
+                getCkLogicPhyReList(clickHouses, logicalEntity, logicalAttributeInfos, logicPhyRelLists);
+            }
+            if (!carbons.isEmpty()) {
+                getCbLogicPhyReList(carbons, logicalEntity, logicalAttributeInfos, logicPhyRelLists);
+            }
+            if (!hdfsList.isEmpty()) {
+                getHdfsLogicPhyReList(hdfsList, logicalEntity, logicalAttributeInfos, logicPhyRelLists);
+            }
+            if (!gaussInfoList.isEmpty()) {
+                getGaussLogicPhyReList(gaussInfoList, logicalEntity, logicalAttributeInfos, logicPhyRelLists);
+            }
+            LogicalModelInfo logicalModelInfo = new LogicalModelInfo();
+            getLogicalEntityInfo(logicalEntity);
+            logicalModelInfo.setLogicalEntity(logicalEntity);
+            logicalModelInfo.setLogicalAttributeList(logicalAttributeInfos);
+
+            logicalModelInfo.setLogicPhyRelList(logicPhyRelLists);
+
+            writeLogicalJsonFile(logicalModelInfo);
+        }
+
+        try {
+            // 压缩生成的json文件
+            ZipUtils.toZip(projectName);
+        } catch (Exception e) {
+            JframeLogUtil.log("创建工程模型失败！" , "ERROR");
+            JOptionPane.showMessageDialog(null,"压缩文件错误","提示",JOptionPane.WARNING_MESSAGE);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 表信息公共字段部分
+     */
+    private PhyTableInfo commonTableInfo(ModelInfo modelInfo) {
+        String time = date.format(System.currentTimeMillis());
+        PhyTableInfo phyTableInfo = new PhyTableInfo();
+        phyTableInfo.setTenantId("1002");
+        phyTableInfo.setAppName(projectName);
+        phyTableInfo.setVersionNo("1.0");
+        phyTableInfo.setCreateOperator("admin");
+        phyTableInfo.setCreateTime(time);
+        phyTableInfo.setLastModOperator("admin");
+        phyTableInfo.setLastModTime(time);
+        phyTableInfo.setValidStartTime(time);
+        phyTableInfo.setValidEndTime("2099-12-31 01:01:01");
+        phyTableInfo.setCatalogId("modellayer1"); // modellayer1 物理模型 modellayer0 逻辑模型
+        phyTableInfo.setTableCode(modelInfo.getPhysicalModel());
+        phyTableInfo.setTableName(modelInfo.getTableName());
+        phyTableInfo.setTableNameEn(modelInfo.getTableNameEn());
+        phyTableInfo.setTableDesc(modelInfo.getTableDesc());
+        phyTableInfo.setTableDescEn(modelInfo.getTableDescEn());
+        phyTableInfo.setTableStatus(modelInfo.getTableStatus());
+        phyTableInfo.setIsOpen(true); // 暂为true
+        phyTableInfo.setIsOperate(false); // 暂为false
+        phyTableInfo.setMetadataSrcType("WEB_CREATE"); // 暂为WEB_CREATE WEB_CREATE：web页面正向建模生成 RESTFUL_CREATE：restful接口导入
+        // WEB_IMPORT_INTERNAL：前台导入-模型复制 选择填写。
+        phyTableInfo.setBillType("general"); // 暂为general
+        phyTableInfo.setOpenFlag(1); // 暂为1
+        phyTableInfo.setIsHasSourceModel(false); // 暂为false
+        phyTableInfo.setIsHasImpactModel(false); // 暂为false
+        phyTableInfo.setVersionFlag(modelInfo.getVersionFlag());
+
+        return phyTableInfo;
+    }
