@@ -1,0 +1,61 @@
+package com.huawei.weautomate.cube.Util;
+
+import com.alibaba.excel.util.StringUtils;
+
+import javax.swing.*;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import java.awt.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+
+/**
+ * @author sWX1080579
+ * @since 2022/8/23 14:33
+ */
+public class JframeLogUtil {
+    private static final SimpleDateFormat date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+    static JTextPane testPane;
+
+
+    public JframeLogUtil(JTextPane testPane) {
+        this.testPane = testPane;
+    }
+
+    static private ExecutorService service = Executors.newCachedThreadPool(new ThreadFactory() {
+        @Override
+        public Thread newThread(Runnable r) {
+            return new Thread(r, "output");
+        }
+    });
+
+    public static void log(String mes, String level) {
+        SimpleAttributeSet attrSet = new SimpleAttributeSet();
+        Color color = new Color(0, 150, 0);
+        if (StringUtils.isNotBlank(level) && level.equals("ERROR")){
+            color = new Color(200, 0, 0);
+        }
+        if (StringUtils.isNotBlank(level) && level.equals("WARN")){
+            color = new Color(255, 99, 0);
+        }
+        StyleConstants.setForeground(attrSet, color);
+        StyleConstants.setBold(attrSet,true);
+        //字体类型
+        StyleConstants.setFontSize(attrSet,12);
+        //字体大小
+        Document document = testPane.getDocument();
+        service.submit(() -> {
+            try {
+                document.insertString(document.getLength(),date.format(new Date())+" ["+ level + "]: "+mes + "\n", attrSet);
+            } catch (BadLocationException e) {
+                e.printStackTrace();
+            }
+        });
+    }
+}
